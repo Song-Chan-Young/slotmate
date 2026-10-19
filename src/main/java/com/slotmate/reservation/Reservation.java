@@ -59,6 +59,33 @@ public class Reservation {
     protected Reservation() {
     }
 
+    /** 첫 신청. status 는 CONFIRMED 또는 WAITING */
+    public static Reservation create(ClassSession session, User user, ReservationStatus status, LocalDateTime now) {
+        Reservation reservation = new Reservation();
+        reservation.session = session;
+        reservation.user = user;
+        reservation.attemptNo = 1;
+        reservation.apply(status, now);
+        return reservation;
+    }
+
+    /** 취소된 예약 재신청 — 같은 행을 쓰고 attemptNo 증가 (DB 설계서 3) */
+    public void rebook(ReservationStatus status, LocalDateTime now) {
+        this.attemptNo++;
+        this.cancelledAt = null;
+        apply(status, now);
+    }
+
+    private void apply(ReservationStatus status, LocalDateTime now) {
+        this.reservationStatus = status;
+        this.requestedAt = now;
+        this.confirmedAt = status == ReservationStatus.CONFIRMED ? now : null;
+    }
+
+    public boolean isActive() {
+        return reservationStatus == ReservationStatus.CONFIRMED || reservationStatus == ReservationStatus.WAITING;
+    }
+
     public Long getId() { return id; }
     public ClassSession getSession() { return session; }
     public User getUser() { return user; }

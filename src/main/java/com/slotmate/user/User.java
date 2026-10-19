@@ -44,6 +44,16 @@ public class User {
     protected User() {
     }
 
+    public static User create(String email, String passwordHash, String displayName, Role role) {
+        User user = new User();
+        user.email = email;
+        user.passwordHash = passwordHash;
+        user.displayName = displayName;
+        user.role = role;
+        user.accountStatus = AccountStatus.ACTIVE;
+        return user;
+    }
+
     public Long getId() { return id; }
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }

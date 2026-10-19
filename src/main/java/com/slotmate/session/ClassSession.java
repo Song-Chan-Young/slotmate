@@ -61,6 +61,36 @@ public class ClassSession {
     protected ClassSession() {
     }
 
+    public static ClassSession create(Program program, Instructor instructor, LocalDateTime startAt,
+                                      LocalDateTime endAt, int capacity, String location, String description,
+                                      SessionStatus sessionStatus, User createdBy) {
+        ClassSession session = new ClassSession();
+        session.program = program;
+        session.instructor = instructor;
+        session.startAt = startAt;
+        session.endAt = endAt;
+        session.capacity = capacity;
+        session.location = location;
+        session.description = description;
+        session.sessionStatus = sessionStatus;
+        session.createdBy = createdBy;
+        return session;
+    }
+
+    /** null 인 값은 그대로 둠 */
+    public void update(Instructor instructor, LocalDateTime startAt, LocalDateTime endAt,
+                       Integer capacity, String location) {
+        if (instructor != null) this.instructor = instructor;
+        if (startAt != null) this.startAt = startAt;
+        if (endAt != null) this.endAt = endAt;
+        if (capacity != null) this.capacity = capacity;
+        if (location != null) this.location = location;
+    }
+
+    public void changeStatus(SessionStatus sessionStatus) {
+        this.sessionStatus = sessionStatus;
+    }
+
     public Long getId() { return id; }
     public Program getProgram() { return program; }
     public Instructor getInstructor() { return instructor; }

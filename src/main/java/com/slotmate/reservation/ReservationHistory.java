@@ -49,6 +49,19 @@ public class ReservationHistory {
     protected ReservationHistory() {
     }
 
+    public static ReservationHistory of(Reservation reservation, ReservationStatus fromStatus,
+                                        ReservationEventType eventType, User actor, LocalDateTime changedAt) {
+        ReservationHistory history = new ReservationHistory();
+        history.reservation = reservation;
+        history.attemptNo = reservation.getAttemptNo();
+        history.fromStatus = fromStatus;
+        history.toStatus = reservation.getReservationStatus();
+        history.eventType = eventType;
+        history.actor = actor;
+        history.changedAt = changedAt;
+        return history;
+    }
+
     public Long getId() { return id; }
     public Reservation getReservation() { return reservation; }
     public int getAttemptNo() { return attemptNo; }

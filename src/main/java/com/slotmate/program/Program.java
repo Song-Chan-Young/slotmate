@@ -46,6 +46,30 @@ public class Program {
     protected Program() {
     }
 
+    public static Program create(ProgramType programType, String name, String description,
+                                 short defaultDurationMinutes, int defaultCapacity) {
+        Program program = new Program();
+        program.programType = programType;
+        program.name = name;
+        program.description = description;
+        program.defaultDurationMinutes = defaultDurationMinutes;
+        program.defaultCapacity = defaultCapacity;
+        program.active = true;
+        return program;
+    }
+
+    /** null 인 값은 그대로 둠 */
+    public void update(String name, String description, Short defaultDurationMinutes, Integer defaultCapacity) {
+        if (name != null) this.name = name;
+        if (description != null) this.description = description;
+        if (defaultDurationMinutes != null) this.defaultDurationMinutes = defaultDurationMinutes;
+        if (defaultCapacity != null) this.defaultCapacity = defaultCapacity;
+    }
+
+    public void changeActive(boolean active) {
+        this.active = active;
+    }
+
     public Long getId() { return id; }
     public ProgramType getProgramType() { return programType; }
     public String getName() { return name; }

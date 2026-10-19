@@ -31,7 +31,8 @@
 - [UI 콘셉트 보드](docs/assets/slotmate_ui_reference_v0.2.png)
 - [DB 설계서 v0.2 — 화면/API 명세 반영](docs/04_DB_DESIGN_v0.2.md)
 - [DB 설계서 v0.1 (초안)](docs/04_DB_DESIGN_v0.1.md)
-- [API 명세서 v0.1](docs/05_API_SPEC_v0.1.md)
+- [API 명세서 v0.2 — 단계 4 구현 반영](docs/05_API_SPEC_v0.2.md)
+- [API 명세서 v0.1 (초안)](docs/05_API_SPEC_v0.1.md)
 - [개발 단계 및 완료 기준](docs/03_ROADMAP.md)
 
 ## 기술 스택 초안

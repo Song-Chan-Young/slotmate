@@ -1,6 +1,6 @@
 # SlotMate — 작업 인계
 
-설계 문서는 `docs/` (요구사항 v0.1 · 화면 v0.2 · DB v0.2 · API v0.1 · 로드맵)
+설계 문서는 `docs/` (요구사항 v0.1 · 화면 v0.2 · DB v0.2 · API v0.2 · 로드맵). 구현에서 정한 것은 API v0.2 13절
 
 ## 작업 방식 (회사 PC 개인 규칙 중 이 프로젝트에 맞는 것)
 
@@ -20,38 +20,45 @@
 | 비밀정보 | 비밀번호·키는 `.env` 에만. 커밋·문서·로그에 안 넣음. 회사 코드·데이터 안 넣음 |
 | 커밋·push | 주임님이 시킬 때만 |
 
-## 진행 상태 (2026-10-19, 회사 Windows PC)
+## 진행 상태 (2026-10-20, 집 macOS)
 
 | 단계 | 상태 |
 |---|---|
-| 3 초기화 | 코드 작성 끝 · **빌드·DB 기동 미검증** (JDK 21·Docker 없어서) |
-| 4 기본 기능 | 안 함 |
+| 3 초기화 | macOS 에서 빌드·DB 기동·`ddl-auto=validate` 확인. Windows 재확인은 안 함 |
+| 4 기본 기능 | 인증·권한 · 관리자 프로그램/회차 · 회원 조회 · 예약 생성 끝. 테스트 51개 통과 |
+| 4 남은 것 | 7.2 내 예약 목록 · 7.3 예약 취소 · 9.5 회차별 예약자 — 「예약·대기 목록」 항목 |
+| 5 정합성 | 안 함 (동시 예약 테스트·자동 승격·알림) |
 
 **한 것**
-- Boot 4.1.1 · Java 21 · Gradle(Groovy) · Web·Validation·Security·JPA·MariaDB·springdoc 3.1.1
+- Boot 4.1.1 · Java 21 · Gradle(Groovy) · Web·Validation·Security·OAuth2 Resource Server·JPA·MariaDB·springdoc 3.1.1
 - `compose.yaml` MariaDB 11.4 + `db/init/01_schema.sql`(DB 설계서 v0.2 DDL 그대로)
-- `com.slotmate.*` enum 7 · 엔티티 7 (getter 만 있는 뼈대)
-- `ddl-auto=none` — 테이블은 schema.sql 이 만듦
+- `ddl-auto=validate` — 테이블은 schema.sql 이 만들고 JPA 는 대조만
+- 인증: JWT HS256, `/api/v1/auth/signup`·`login`. 관리자 계정은 기동 시 `.env` 값으로 생성
+- 관리자: `/api/v1/admin/programs`·`/api/v1/admin/sessions` (9.1~9.4)
+- 회원: `GET /api/v1/programs`·`/api/v1/sessions` (6.1~6.4) · `POST /api/v1/sessions/{id}/reservations` (7.1)
+- 오류 응답 `{code, message, fieldErrors}` — `common/error/ErrorCode`
+- 테스트는 로컬 MariaDB 에 붙어 돌고 각 테스트 롤백 (`support/ApiTestSupport`)
 
 **정한 것**
 - 화면은 나중. API 먼저(Swagger 로 확인)
 - DB 는 Docker 로 MariaDB
 - 범위는 단계별로 하나씩
+- API 세부 결정은 `docs/05_API_SPEC_v0.2.md` 13절
 
-## 집(macOS)에서 이어서 할 일
+## 다른 PC 에서 이어서 할 때
 
-0. `git clone https://github.com/Song-Chan-Young/slotmate.git` → `cd slotmate` → `claude` (이 파일 자동으로 읽힘)
-   - 커밋 작성자: `git config user.name "송찬영"` · `git config user.email "thdcksdud123@gmail.com"`
-1. JDK 21 설치 (IntelliJ → Project Structure → SDK → Download JDK → 21)
-2. Docker Desktop for Mac 설치 (Apple 칩/Intel 맞는 것)
-3. `cp .env.example .env` → 비밀번호 채움 (`.env` 는 git 제외, PC 마다 따로)
-4. `docker compose up -d` → 테이블 7개 생성 확인
-5. `./gradlew build` — 컴파일·`contextLoads` 테스트 통과 확인
-6. 확인되면 `ddl-auto=validate` 로 바꿔 엔티티↔테이블 대조
-7. 그다음 단계 4 (인증·권한부터)
+1. `git pull` → `cp .env.example .env` → 값 채움 (`JWT_SECRET` 32바이트 이상, `ADMIN_EMAIL`·`ADMIN_PASSWORD`)
+2. `docker compose up -d` → 테이블 7개 확인. 스키마가 바뀌었으면 `docker compose down -v` 후 다시 `up`
+3. `./gradlew build` → 테스트 통과 확인 → `./gradlew bootRun`
+4. Swagger: http://localhost:8080/swagger-ui/index.html → `auth/login` 으로 토큰 받아 Authorize
+
+macOS(집) 메모
+- Docker 는 Docker Desktop 대신 colima (`brew install colima docker docker-compose`, `colima start`)
+- 기본 java 가 26 이라 `export JAVA_HOME=$(/usr/libexec/java_home -v 21)` 후 gradlew 실행
+- 재부팅 후: `colima start` → `docker compose up -d` → `./gradlew bootRun`
 
 ## 알아둘 것
 
-- Spring Security 기본값이라 지금은 모든 API·Swagger 가 로그인 요구
-- 커밋 작성자는 저장소 로컬 설정(개인 계정). 맥에서도 `git config user.name/user.email` 확인
-- 요구사항 11절 · API 12절의 미확정 항목은 아직 그대로
+- 커밋 작성자는 저장소 로컬 설정(개인 계정). PC 마다 `git config user.name/user.email` 확인
+- 요구사항 11절 · API 12절의 미확정 항목은 아직 그대로 (12절에 v0.2 에서 새로 생긴 미정 항목 추가)
+- 강사 관리 API 없음 — 강사는 DB 에 직접 INSERT
