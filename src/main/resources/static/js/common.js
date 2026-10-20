@@ -77,6 +77,22 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
+// 선 아이콘 (24 그리드, stroke 는 글자색)
+const ICONS = {
+  dashboard: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  list: '<path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>',
+  check: '<circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.5 2.5L16 9.5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  external: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+};
+function icon(name) {
+  const span = el('span', { class: 'icon', 'aria-hidden': 'true' });
+  span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+  return span;
+}
+
 function toast(message) {
   const t = el('div', { class: 'toast', role: 'status' }, message);
   document.body.append(t);
@@ -150,6 +166,17 @@ function renderHeader(active) {
     : [el('a', { class: 'btn small primary', href: '/login.html?next=' + encodeURIComponent(location.pathname + location.search) }, '로그인')];
 
   const wide = document.querySelector('main.container.wide');
+  // A01 — 관리자 화면은 넓은 화면에서 왼쪽 메뉴. 좁은 화면은 위 헤더 메뉴 그대로
+  if (user?.role === 'ADMIN' && active?.startsWith('admin-')) {
+    document.body.classList.add('admin-layout');
+    const side = [['/admin/home.html', '대시보드', 'admin-home', 'dashboard'], ['/admin/index.html', '수업 관리', 'admin-sessions', 'calendar'],
+      ['/admin/programs.html', '프로그램', 'admin-programs', 'list'], ['/admin/members.html', '회원', 'admin-members', 'users']];
+    document.body.prepend(el('aside', { class: 'sidebar' },
+      el('a', { class: 'logo', href: '/admin/home.html' }, 'Slot', el('span', {}, 'Mate'), el('small', {}, '관리자')),
+      el('nav', {}, side.map(([href, label, key, name]) =>
+        el('a', { href, class: key === active ? 'active' : null }, icon(name), label))),
+      el('a', { class: 'side-foot', href: '/' }, icon('external'), '회원 화면 보기')));
+  }
   document.body.prepend(el('header', { class: 'header' },
     el('div', { class: 'header-inner' + (wide ? ' wide' : '') },
       el('a', { class: 'logo', href: '/' }, 'Slot', el('span', {}, 'Mate')),
