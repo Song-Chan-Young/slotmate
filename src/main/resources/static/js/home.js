@@ -1,6 +1,6 @@
 // M01·M02 — 날짜·필터를 바꾸면 GET /sessions?date= 로 시간순 카드 목록
 
-const TYPE_FILTERS = [['', '전체'], ['PT', 'PT'], ['YOGA', '요가'], ['GX', 'GX']];
+const TYPE_FILTERS = [['', '전체'], ...Object.entries(PROGRAM_TYPES)];
 const DATE_RANGE = 14;
 
 const params = new URLSearchParams(location.search);

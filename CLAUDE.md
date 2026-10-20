@@ -25,9 +25,9 @@
 | 단계 | 상태 |
 |---|---|
 | 3 초기화 | macOS 에서 빌드·DB 기동·`ddl-auto=validate` 확인. Windows 재확인은 안 함 |
-| 4 기본 기능 | 인증·권한 · 관리자 프로그램/회차 · 회원 조회 · 예약 생성 끝. 테스트 51개 통과 |
-| 4 남은 것 | 7.2 내 예약 목록 · 7.3 예약 취소 · 9.5 회차별 예약자 — 「예약·대기 목록」 항목 |
-| 5 정합성 | 안 함 (동시 예약 테스트·자동 승격·알림) |
+| 4 기본 기능 | 인증·권한 · 관리자 프로그램/회차 · 회원 조회 · 예약 생성 · 내 예약(7.2) · 취소(7.3) · 회차별 예약자(9.5) 끝 |
+| 5 정합성 | 자동 승격 · 이력 · 알림(8절) · 동시 요청 테스트 끝. 테스트 71개 통과 |
+| 6 품질·배포 | 안 함 |
 
 **한 것**
 - Boot 4.1.1 · Java 21 · Gradle(Groovy) · Web·Validation·Security·OAuth2 Resource Server·JPA·MariaDB·springdoc 3.1.1
@@ -35,7 +35,11 @@
 - `ddl-auto=validate` — 테이블은 schema.sql 이 만들고 JPA 는 대조만
 - 인증: JWT HS256, `/api/v1/auth/signup`·`login`. 관리자 계정은 기동 시 `.env` 값으로 생성
 - 관리자: `/api/v1/admin/programs`·`/api/v1/admin/sessions` (9.1~9.4)
-- 회원: `GET /api/v1/programs`·`/api/v1/sessions` (6.1~6.4) · `POST /api/v1/sessions/{id}/reservations` (7.1)
+- 회원: `GET /api/v1/programs`·`/api/v1/sessions` (6.1~6.4) · `POST /api/v1/sessions/{id}/reservations` (7.1) · `GET /api/v1/my/reservations` (7.2) · `DELETE /api/v1/reservations/{id}` (7.3)
+- 관리자 회차별 예약자: `GET /api/v1/admin/sessions/{id}/reservations` (9.5)
+- 알림: `GET /api/v1/my/notifications` · `PATCH …/{id}/read` (8절)
+- 명세 밖 추가 조회: `GET /api/v1/admin/instructors` · `GET /api/v1/admin/members` (API 13.8)
+- 화면(static): 회원 홈·상세·내 예약·알림 · 관리자 대시보드·시간표·프로그램·회차별 예약·회원
 - 오류 응답 `{code, message, fieldErrors}` — `common/error/ErrorCode`
 - 테스트는 로컬 MariaDB 에 붙어 돌고 각 테스트 롤백 (`support/ApiTestSupport`)
 

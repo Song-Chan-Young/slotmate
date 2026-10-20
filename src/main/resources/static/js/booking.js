@@ -51,7 +51,9 @@ async function reserve(item, button, onDone) {
           el('p', {}, when),
           el('p', {}, '현재 대기 순번: ', el('b', {}, `${result.waitingPosition}번째`)),
           el('p', { class: 'muted' }, '앞선 확정 예약이 취소되면 대기 순서대로 자동으로 확정됩니다.'));
-    await modal(result.message, body);
+    const choice = await modal(result.message, body,
+      [{ label: '닫기', value: false }, { label: '예약 내역 보기', class: 'primary', value: true }]);
+    if (choice) { location.href = '/my.html'; return; }
   } catch (e) {
     if (e.status === 401) { Auth.goLogin(); return; }
     // 동시에 마지막 자리가 나간 경우도 서버가 대기로 처리하므로, 실패는 위 코드들 또는 네트워크 오류

@@ -21,6 +21,7 @@ function mondayOf(ymd) {
 
 const state = { weekStart: mondayOf(new URLSearchParams(location.search).get('week') || todaySeoul()), type: '', status: '' };
 let programs = [];
+let instructors = [];
 
 // ---- 필터 ----
 
@@ -87,23 +88,55 @@ function renderGrid(items) {
   days.forEach((d) => {
     const col = el('div', { class: 'tt-day', style: `height:${height}px` });
     for (let h = startHour + 1; h < endHour; h++) col.append(el('div', { class: 'tt-line', style: `top:${(h - startHour) * HOUR_PX}px` }));
-    items.filter((s) => ymdOf(s.startAt) === d).forEach((s) => {
+    layoutLanes(items.filter((s) => ymdOf(s.startAt) === d)).forEach(({ s, lane, lanes }) => {
       const startMin = minutesOfDay(s.startAt);
       const duration = Math.max(minutesBetween(s.startAt, s.endAt), 25);
+      const blockHeight = Math.min(duration / 60 * HOUR_PX, height - top(startMin)) - 2;
+      const counts = `${s.confirmedCount}/${s.capacity}${s.waitingCount ? ` · 대기 ${s.waitingCount}` : ''}`;
+      const statusText = SESSION_STATUS[s.sessionStatus][0];
+      // 3줄이 안 들어가는 짧은 수업은 2줄로. 칸을 나눈 블록은 시작 시각만
+      const compact = blockHeight < 56;
+      const time = lanes > 1 ? hhmm(s.startAt) : `${hhmm(s.startAt)}–${hhmm(s.endAt)}`;
       col.append(el('button', {
         class: 'tt-block s-' + s.sessionStatus,
-        style: `top:${top(startMin)}px;height:${Math.min(duration / 60 * HOUR_PX, height - top(startMin)) - 2}px`,
-        title: `${s.programName} ${hhmm(s.startAt)}–${hhmm(s.endAt)} · ${SESSION_STATUS[s.sessionStatus][0]}`,
+        style: `top:${top(startMin)}px;height:${blockHeight}px;`
+          + `left:calc(3px + (100% - 6px) * ${lane} / ${lanes});width:calc((100% - 6px) / ${lanes} - 2px)`,
+        title: `${s.programName} ${hhmm(s.startAt)}–${hhmm(s.endAt)} · ${counts} · ${statusText}`,
         onclick: () => openForm(s),
       },
       el('b', {}, s.programName),
-      `${hhmm(s.startAt)}–${hhmm(s.endAt)}`, el('br'),
-      `${s.confirmedCount}/${s.capacity}`, s.waitingCount ? ` · 대기 ${s.waitingCount}` : '',
-      ` · ${SESSION_STATUS[s.sessionStatus][0]}`));
+      compact
+        ? el('span', {}, `${hhmm(s.startAt)} · ${counts} · ${statusText}`)
+        : [el('span', {}, time), el('span', {}, `${counts} · ${statusText}`)]));
     });
     cells.push(col);
   });
   document.getElementById('timetable').replaceChildren(...cells);
+}
+
+/** 시간이 겹치는 수업은 같은 묶음 안에서 칸을 나눠 나란히 놓음 → [{ s, lane, lanes }] */
+function layoutLanes(daySessions) {
+  const sorted = [...daySessions].sort((a, b) => a.startAt.localeCompare(b.startAt) || a.endAt.localeCompare(b.endAt));
+  const result = [];
+  let group = [];
+  let laneEnds = [];
+  let groupEnd = '';
+  const flush = () => {
+    group.forEach((g) => { g.lanes = laneEnds.length; });
+    result.push(...group);
+    group = [];
+    laneEnds = [];
+  };
+  sorted.forEach((s) => {
+    if (group.length && s.startAt >= groupEnd) flush();
+    let lane = laneEnds.findIndex((end) => end <= s.startAt);
+    if (lane === -1) lane = laneEnds.length;
+    laneEnds[lane] = s.endAt;
+    group.push({ s, lane });
+    groupEnd = group.length === 1 || s.endAt > groupEnd ? s.endAt : groupEnd;
+  });
+  flush();
+  return result;
 }
 
 /** 좁은 화면 — 날짜별 목록 (화면 설계서 A02) */
@@ -126,8 +159,12 @@ function renderDayList(items) {
 // ---- 등록·수정 폼 ----
 
 async function loadPrograms() {
-  const page = await api('/admin/programs', { query: { size: 500 } });
+  const [page, instructorList] = await Promise.all([
+    api('/admin/programs', { query: { size: 500 } }),
+    api('/admin/instructors'),
+  ]);
   programs = page.items;
+  instructors = instructorList;
 }
 
 function input(id, attrs = {}) { return el('input', { id, ...attrs }); }
@@ -147,7 +184,12 @@ async function openForm(session) {
   const start = input('f-start', { type: 'time', required: true, value: editing ? hhmm(session.startAt) : '10:00' });
   const end = input('f-end', { type: 'time', required: true, value: editing ? hhmm(session.endAt) : '' });
   const capacity = input('f-capacity', { type: 'number', min: 1, required: true, value: editing ? session.capacity : '' });
-  const instructor = input('f-instructor', { type: 'number', min: 1, value: editing ? (session.instructorId ?? '') : '', placeholder: '없으면 비움' });
+  // 비활성 강사는 지금 배정된 경우만 보임 (새로 고르면 서버가 409)
+  const instructor = el('select', { id: 'f-instructor' },
+    el('option', { value: '' }, '미정'),
+    instructors.filter((i) => i.active || i.instructorId === session?.instructorId).map((i) =>
+      el('option', { value: i.instructorId, selected: i.instructorId === session?.instructorId },
+        `${i.name}${i.specialty ? ` · ${i.specialty}` : ''}${i.active ? '' : ' · 비활성'}`)));
   const location_ = input('f-location', { maxlength: 150, value: editing ? (session.location ?? '') : '' });
 
   const programSelect = el('select', { id: 'f-program', required: true, disabled: editing },
@@ -171,7 +213,7 @@ async function openForm(session) {
   const form = el('form', { novalidate: true },
     field('프로그램', programSelect, 'programId', editing ? '(수정 불가)' : null),
     el('div', { class: 'row' }, field('날짜', date, 'startAt'), field('시작', start, 'startAt'), field('종료', end, 'endAt')),
-    el('div', { class: 'row' }, field('정원', capacity, 'capacity'), field('강사 ID', instructor, 'instructorId', '(선택)')),
+    el('div', { class: 'row' }, field('정원', capacity, 'capacity'), field('강사', instructor, 'instructorId', '(선택)')),
     field('장소', location_, 'location', '(선택)'));
 
   let description;
@@ -238,6 +280,8 @@ function statusPanel(s) {
       statusBadge(s.sessionStatus),
       el('span', { class: 'muted', style: 'font-size:13px' },
         `확정 ${s.confirmedCount}/${s.capacity} · 대기 ${s.waitingCount}`),
+      el('a', { class: 'btn small', href: `/admin/reservations.html?sessionId=${s.sessionId}&date=${ymdOf(s.startAt)}` },
+        '예약·대기 관리'),
       el('span', { style: 'flex:1' }),
       buttons.length ? buttons : el('span', { class: 'muted', style: 'font-size:13px' }, '상태 변경 불가')));
 }

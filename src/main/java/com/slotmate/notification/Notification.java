@@ -48,6 +48,24 @@ public class Notification {
     protected Notification() {
     }
 
+    public static Notification create(User user, Reservation reservation, NotificationType type,
+                                      String title, String message) {
+        Notification notification = new Notification();
+        notification.user = user;
+        notification.reservation = reservation;
+        notification.notificationType = type;
+        notification.title = title;
+        notification.message = message;
+        return notification;
+    }
+
+    /** 이미 읽었으면 그대로 */
+    public void markRead(LocalDateTime now) {
+        if (read) return;
+        this.read = true;
+        this.readAt = now;
+    }
+
     public Long getId() { return id; }
     public User getUser() { return user; }
     public Reservation getReservation() { return reservation; }

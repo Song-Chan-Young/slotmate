@@ -32,7 +32,7 @@ function showError(form, e) {
 /** 관리자는 관리자 화면, 회원은 원래 보던 화면으로 (외부 주소로는 보내지 않음) */
 function goNext(user) {
   const safeNext = next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/login') ? next : null;
-  location.href = safeNext || (user.role === 'ADMIN' ? '/admin/index.html' : '/');
+  location.href = safeNext || (user.role === 'ADMIN' ? '/admin/home.html' : '/');
 }
 
 async function login(email, password) {

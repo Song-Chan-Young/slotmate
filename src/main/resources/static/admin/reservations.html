@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SlotMate 관리자 — 예약 관리</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<main class="container">
+  <p><a href="/admin/index.html" id="back">← 수업 관리</a></p>
+  <div class="card" id="summary" style="margin-bottom:16px"></div>
+  <div class="filters" id="filters" role="group" aria-label="예약 상태 필터" style="margin:0 0 14px"></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+      <tr><th>순번</th><th>회원</th><th>상태</th><th>신청</th><th>확정</th><th>취소</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div style="text-align:center;margin-top:16px"><button class="btn hidden" id="more">더 보기</button></div>
+</main>
+<script src="/js/common.js"></script>
+<script src="/js/admin-common.js"></script>
+<script src="/js/admin-reservations.js"></script>
+</body>
+</html>

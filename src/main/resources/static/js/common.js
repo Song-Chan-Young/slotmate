@@ -139,8 +139,10 @@ function statusBadge(status) {
 function renderHeader(active) {
   const user = Auth.user();
   const nav = [['/', '수업 찾기', 'home']];
+  if (user?.role === 'MEMBER') nav.push(['/my.html', '내 예약', 'my'], ['/notifications.html', '알림', 'notifications']);
   if (user?.role === 'ADMIN') {
-    nav.push(['/admin/index.html', '수업 관리', 'admin-sessions'], ['/admin/programs.html', '프로그램', 'admin-programs']);
+    nav.push(['/admin/home.html', '대시보드', 'admin-home'], ['/admin/index.html', '수업 관리', 'admin-sessions'],
+      ['/admin/programs.html', '프로그램', 'admin-programs'], ['/admin/members.html', '회원', 'admin-members']);
   }
   const account = user
     ? [el('span', {}, user.displayName, ' ', el('span', { class: 'badge ' + (user.role === 'ADMIN' ? 'wait' : 'off') }, user.role === 'ADMIN' ? '관리자' : '회원')),
@@ -154,4 +156,19 @@ function renderHeader(active) {
       el('nav', { class: 'nav' }, nav.map(([href, label, key]) =>
         el('a', { href, class: key === active ? 'active' : null }, label))),
       el('div', { class: 'account' }, account))));
+  if (user?.role === 'MEMBER') showUnreadCount();
+}
+
+/** 헤더 알림 메뉴 옆 읽지 않은 알림 수 (화면 설계서 3절) */
+async function showUnreadCount() {
+  try {
+    const page = await api('/my/notifications', { query: { unreadOnly: true, size: 1 } });
+    const link = document.querySelector('.nav a[href="/notifications.html"]');
+    link?.querySelector('.count')?.remove();
+    if (link && page.page.totalElements > 0) {
+      link.append(' ', el('span', { class: 'count' }, page.page.totalElements > 99 ? '99+' : page.page.totalElements));
+    }
+  } catch {
+    // 개수 표시는 보조 정보라 실패해도 화면은 그대로
+  }
 }

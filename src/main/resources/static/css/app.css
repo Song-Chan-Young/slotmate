@@ -48,6 +48,28 @@ h2 { font-size: 18px; margin: 0 0 12px; }
 .nav { display: flex; gap: 14px; flex: 1; }
 .nav a { color: var(--muted); font-weight: 600; }
 .nav a.active { color: var(--text); }
+.nav a { white-space: nowrap; }
+.nav .count {
+  display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--stop); color: #fff;
+  font-size: 11px; line-height: 18px; text-align: center;
+}
+
+/* 알림 */
+.notice {
+  display: block; width: 100%; text-align: left; font: inherit; color: var(--text); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px;
+}
+.notice.unread { border-left: 4px solid var(--primary); }
+.notice .head { display: flex; justify-content: space-between; gap: 12px; }
+.notice .head b { font-size: 15px; }
+.notice .when { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.notice p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+/* 관리자 요약 카드 */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+.stat .label { color: var(--muted); font-size: 13px; font-weight: 600; }
+.stat .value { font-size: 26px; font-weight: 800; }
 .account { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 
 .container { max-width: 1080px; margin: 0 auto; padding: 20px 16px 48px; }
@@ -189,7 +211,8 @@ label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
   border: 1px solid var(--line); border-left-width: 4px; background: #fff; color: var(--text);
 }
 .tt-block:hover { box-shadow: 0 2px 8px rgba(16, 24, 40, .15); z-index: 2; }
-.tt-block b { display: block; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tt-block b, .tt-block span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tt-block b { font-size: 12px; }
 .tt-block.s-OPEN { border-left-color: var(--ok); background: #f5fbf7; }
 .tt-block.s-DRAFT { border-left-color: var(--off); background: #fafbfc; border-style: dashed; border-left-style: solid; }
 .tt-block.s-CLOSED { border-left-color: var(--wait); background: #fffaf3; }
@@ -227,4 +250,5 @@ label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
   .day-list { display: block; }
   .detail-grid { grid-template-columns: 96px 1fr; }
   .row { flex-direction: column; gap: 0; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

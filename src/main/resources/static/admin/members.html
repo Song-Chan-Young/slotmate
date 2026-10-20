@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SlotMate 관리자 — 회원</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<main class="container">
+  <div class="admin-head">
+    <h1>회원</h1>
+    <span class="muted" id="total"></span>
+  </div>
+  <div class="admin-head">
+    <select id="status" style="width:auto">
+      <option value="">전체 상태</option>
+      <option value="ACTIVE">활성</option>
+      <option value="WITHDRAWN">탈퇴</option>
+    </select>
+    <input id="keyword" type="search" placeholder="이름 또는 이메일 검색" style="max-width:320px">
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+      <tr><th>이름</th><th>이메일</th><th>상태</th><th>가입일</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div style="text-align:center;margin-top:16px"><button class="btn hidden" id="more">더 보기</button></div>
+</main>
+<script src="/js/common.js"></script>
+<script src="/js/admin-common.js"></script>
+<script src="/js/admin-members.js"></script>
+</body>
+</html>

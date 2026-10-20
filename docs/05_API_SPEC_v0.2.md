@@ -88,6 +88,7 @@ v0.2 구현 코드 (`ErrorCode`):
 | 409 | `INVALID_STATUS_TRANSITION` | 9.4 전이표에 없는 상태 변경 |
 | 409 | `SESSION_HAS_ACTIVE_RESERVATIONS` | 확정·대기 예약 있는 회차의 시간 변경·취소 |
 | 409 | `INSTRUCTOR_NOT_ACTIVE` | 비활성 강사 배정 |
+| 409 | `RESERVATION_NOT_CANCELLABLE` | 이미 취소한 예약, 시작한 회차의 예약 취소 |
 
 - `500 INTERNAL_SERVER_ERROR` 공통 처리는 아직 없음 (로드맵 단계 6)
 
@@ -464,11 +465,10 @@ v0.2 구현 코드 (`ErrorCode`):
 - 토큰 갱신 및 로그아웃 정책
 - 회차 취소 시 기존 확정·대기 예약의 상태 처리 — v0.2 는 예약이 있으면 취소 자체를 409 로 막음(임시)
 - 강사 시간 중복 검증을 1차 버전에 포함할지 여부
-- 회원 관리 API를 1차 또는 후속 버전에 넣을지 여부
+- 회원 관리 API를 1차 또는 후속 버전에 넣을지 여부 — v0.2 는 조회만 추가 (13.8)
 - `location`과 `description` 필드의 최종 길이 및 필수 여부 — v0.2 는 DB 컬럼 길이(location 150)만 검사
-- 강사 관리 API — 명세에 없음. v0.2 는 DB 직접 입력
+- 강사 관리 API — 명세에 없음. v0.2 는 목록 조회만 추가(13.8), 등록·수정은 DB 직접 입력
 - 탈퇴(`WITHDRAWN`) 계정의 로그인 처리
-- 예약 생성 시 인앱 알림 생성 여부 (DB 설계서 6.1 「필요한 경우」)
 
 이 명세는 화면과 백엔드 간의 초안 계약이다. 실제 구현과 통합 테스트를 진행하면서 변경 사항은 버전으로 기록한다.
 
@@ -514,7 +514,7 @@ v0.2 구현 코드 (`ErrorCode`):
 | UNIQUE 위반 | 409 `DUPLICATE_ACTIVE_RESERVATION` 으로 변환 (10절 4) |
 | 재신청 | 취소된 예약이 있으면 같은 행 재사용, `attemptNo` +1 |
 | 이력 | 같은 트랜잭션에 저장. 첫 신청 `BOOKED`/`WAITLISTED`, 재신청 `REBOOKED` |
-| 알림 | 아직 생성 안 함 (12절) |
+| 알림 | 확정 `BOOKING_CONFIRMED`, 대기 `WAITLISTED` (13.7) |
 | 동시 요청 검증 | 테스트는 단계 5 |
 
 ### 13.4 관리자 프로그램 (9.1)
@@ -553,10 +553,51 @@ v0.2 구현 코드 (`ErrorCode`):
 | `CANCELLED` | 없음 |
 | `COMPLETED` | 없음 (API 로 만들지 않음) |
 
-### 13.6 미구현
+### 13.6 내 예약 · 취소 · 회차별 예약자 (7.2 · 7.3 · 9.5)
 
-| API | 상태 |
+| 항목 | 내용 |
 |---|---|
-| 7.2 내 예약 목록 · 7.3 예약 취소 | 안 함 |
-| 8절 알림 | 안 함 |
-| 9.5 회차별 예약자·대기자 | 안 함 |
+| 7.2 권한 | `MEMBER` 만. `ADMIN` 은 403 |
+| 7.2 쿼리 | `status`, `from`·`to`(회차 시작 날짜, 둘 다 포함, `from` > `to` 면 400), `page`, `size`(기본 20) |
+| 7.2 정렬 | 회차 시작 시각 내림차순 |
+| 7.2 응답 항목 | `reservationId`, `sessionId`, `programName`, `programType`, `instructorName`, `startAt`, `endAt`, `location`, `sessionStatus`, `reservationStatus`, `waitingPosition`(WAITING 만), `requestedAt`, `confirmedAt`, `cancelledAt` |
+| 7.3 권한 | `MEMBER` 만. 남의 예약 403, 없는 예약 404 |
+| 7.3 잠금 | 회차 행 `SELECT … FOR UPDATE` 후 예약 조회 (신청과 같은 순서) |
+| 7.3 취소 불가 | `CANCELLED` 예약, 시작 시각이 지난 회차 → 409 `RESERVATION_NOT_CANCELLABLE` |
+| 7.3 메시지 | 확정 취소 「예약이 취소되었습니다.」, 대기 취소 「대기가 취소되었습니다.」 |
+| 7.3 승격 | 확정 취소 + 회차 `OPEN` + 확정 수 < 정원이면 가장 오래 기다린 대기 1명을 같은 트랜잭션에서 `CONFIRMED`. `CLOSED` 회차는 승격 안 함 |
+| 7.3 이력 | 취소 `CANCELLED`(actor 본인), 승격 `PROMOTED`(actor 없음) |
+| 7.3 알림 | 취소 본인 `CANCELLED`, 승격된 회원 `PROMOTED` (13.7) |
+| 9.5 쿼리 | `status`, `page`, `size`(기본 20). 없는 회차 404 |
+| 9.5 정렬 | `requestedAt`, `reservationId` 오름차순 |
+| 9.5 응답 항목 | 명세 예시 항목 + `confirmedAt`, `cancelledAt`. `confirmedAt` > `requestedAt` 이면 대기에서 승격된 것 |
+| 동시 요청 검증 | 테스트는 단계 5 |
+
+### 13.7 알림 (8절)
+
+| 항목 | 내용 |
+|---|---|
+| 생성 시점 | 예약 확정·대기 신청·취소·자동 승격. 상태 변경과 같은 트랜잭션 |
+| 제목 | 「예약이 확정되었습니다」 「대기 신청이 완료되었습니다」 「예약이 취소되었습니다」·「대기가 취소되었습니다」 「대기하던 수업이 예약 확정되었습니다」 |
+| 본문 | `10월 22일 (목) 07:00 매트 필라테스` 형식. 대기는 「· 현재 대기 N번째」, 승격은 자동 확정 안내를 덧붙임 |
+| 8.1 권한·정렬 | `MEMBER` 만. 생성 최신순. `unreadOnly`, `page`, `size`(기본 20) |
+| 8.1 응답 항목 | `notificationId`, `notificationType`, `title`, `message`, `read`, `createdAt`, `readAt`, `reservationId`, `sessionId` |
+| 8.2 | 남의 알림·없는 알림 모두 404 `RESOURCE_NOT_FOUND`. 이미 읽은 알림은 그대로 200 |
+| 읽지 않은 개수 | 별도 API 없음. 화면은 `unreadOnly=true&size=1` 의 `totalElements` 사용 |
+
+### 13.8 관리자 조회 추가 (명세에 없던 것)
+
+| API | 내용 |
+|---|---|
+| `GET /admin/instructors` | 수업 폼 강사 선택용. 비활성 포함, 이름순, 페이지 없음. 항목 `instructorId`, `name`, `specialty`, `active`. 등록·수정 API 는 아직 없음 |
+| `GET /admin/members` | 화면 A05. `MEMBER` 만. `keyword`(이름·이메일), `status`(`ACTIVE`·`WITHDRAWN`), `page`, `size`. 가입 최신순. 항목 `userId`, `displayName`, `email`, `accountStatus`, `createdAt`. 조회만 |
+
+### 13.9 동시 요청 검증 (단계 5)
+
+| 테스트 | 확인한 것 |
+|---|---|
+| 마지막 한 자리 20명 동시 신청 | 확정 1, 대기 19 |
+| 같은 회원 20번 동시 신청 | 활성 예약 1건, 나머지 409 |
+| 확정 취소와 신규 신청 동시 | 확정 1건, 가장 오래 기다린 대기자가 승격 |
+
+- 회차 행 잠금(`findByIdForUpdate`)을 빼면 첫 테스트가 실패하는 것 확인

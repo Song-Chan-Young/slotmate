@@ -60,6 +60,9 @@ public class SecurityConfig {
                         // 명세 6절 회원용 조회는 공개. 토큰이 오면 본인 예약 상태를 함께 반환
                         .requestMatchers(HttpMethod.GET, "/api/v1/programs/**", "/api/v1/sessions/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/sessions/*/reservations").hasRole("MEMBER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/my/reservations").hasRole("MEMBER")
+                        .requestMatchers("/api/v1/my/notifications/**").hasRole("MEMBER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/reservations/*").hasRole("MEMBER")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(o -> o
                         .jwt(Customizer.withDefaults())

@@ -82,6 +82,17 @@ public class Reservation {
         this.confirmedAt = status == ReservationStatus.CONFIRMED ? now : null;
     }
 
+    public void cancel(LocalDateTime now) {
+        this.reservationStatus = ReservationStatus.CANCELLED;
+        this.cancelledAt = now;
+    }
+
+    /** 대기 → 확정 자동 승격. requestedAt 은 그대로 */
+    public void promote(LocalDateTime now) {
+        this.reservationStatus = ReservationStatus.CONFIRMED;
+        this.confirmedAt = now;
+    }
+
     public boolean isActive() {
         return reservationStatus == ReservationStatus.CONFIRMED || reservationStatus == ReservationStatus.WAITING;
     }

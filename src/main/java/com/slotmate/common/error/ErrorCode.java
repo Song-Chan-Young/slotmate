@@ -16,7 +16,8 @@ public enum ErrorCode {
     SESSION_HAS_ACTIVE_RESERVATIONS(HttpStatus.CONFLICT, "확정·대기 예약이 있는 회차는 시간 변경·취소할 수 없습니다."),
     INSTRUCTOR_NOT_ACTIVE(HttpStatus.CONFLICT, "배정할 수 없는 강사입니다."),
     DUPLICATE_ACTIVE_RESERVATION(HttpStatus.CONFLICT, "이미 이 수업에 예약 또는 대기 등록되어 있습니다."),
-    SESSION_NOT_OPEN(HttpStatus.CONFLICT, "예약을 받지 않는 수업입니다.");
+    SESSION_NOT_OPEN(HttpStatus.CONFLICT, "예약을 받지 않는 수업입니다."),
+    RESERVATION_NOT_CANCELLABLE(HttpStatus.CONFLICT, "취소할 수 없는 예약입니다.");
 
     private final HttpStatus status;
     private final String message;

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SlotMate 관리자 — 대시보드</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<main class="container">
+  <div class="admin-head">
+    <h1>대시보드</h1>
+    <span class="muted" id="today-label"></span>
+    <span class="spacer"></span>
+    <a class="btn" href="/admin/index.html">주간 시간표</a>
+  </div>
+  <div class="stats" id="stats"></div>
+  <h2>오늘 수업</h2>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+      <tr><th>시간</th><th>수업</th><th>강사</th><th>확정/정원</th><th>대기</th><th>상태</th><th></th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+<script src="/js/common.js"></script>
+<script src="/js/admin-common.js"></script>
+<script src="/js/admin-home.js"></script>
+</body>
+</html>
