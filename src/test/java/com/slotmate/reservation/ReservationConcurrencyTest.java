@@ -125,6 +125,35 @@ class ReservationConcurrencyTest {
                 + "AND reservation_status = 'CONFIRMED'", Long.class, sessionId)).isEqualTo(userIds.get(1));
     }
 
+    /** k6 부하 테스트에서 찾은 문제 — 동시 취소 4건에 같은 대기자만 4번 승격되고 3자리가 비던 것 */
+    @Test
+    void 확정자_여러_명이_동시에_취소하면_취소한_수만큼_서로_다른_대기자가_순서대로_승격() throws Exception {
+        int capacity = 4;
+        jdbc.update("UPDATE class_sessions SET capacity = ? WHERE session_id = ?", capacity, sessionId);
+        List<Long> confirmedReservations = new ArrayList<>();
+        for (int i = 0; i < THREADS; i++) {
+            long reservationId = reservationService.reserve(sessionId, userIds.get(i)).reservationId();
+            if (i < capacity) confirmedReservations.add(reservationId);
+        }
+
+        List<Callable<ReservationStatus>> tasks = new ArrayList<>();
+        for (int i = 0; i < capacity; i++) {
+            long reservationId = confirmedReservations.get(i);
+            long ownerId = userIds.get(i);
+            tasks.add(() -> reservationService.cancel(reservationId, ownerId).reservationStatus());
+        }
+        runTogether(tasks);
+
+        assertThat(count("CONFIRMED")).isEqualTo(capacity);
+        assertThat(jdbc.queryForList("SELECT user_id FROM reservations WHERE session_id = ? "
+                + "AND reservation_status = 'CONFIRMED' ORDER BY user_id", Long.class, sessionId))
+                .containsExactlyElementsOf(userIds.subList(capacity, capacity * 2));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM reservation_histories h JOIN reservations r "
+                + "USING (reservation_id) WHERE r.session_id = ? AND h.event_type = 'PROMOTED'", Integer.class, sessionId))
+                .isEqualTo(capacity);
+        assertThat(count("WAITING")).isEqualTo(THREADS - capacity * 2);
+    }
+
     private <T> List<T> runTogether(List<Callable<T>> tasks) throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(tasks.size());
         CountDownLatch start = new CountDownLatch(1);

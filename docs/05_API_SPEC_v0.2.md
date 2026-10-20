@@ -562,7 +562,7 @@ v0.2 구현 코드 (`ErrorCode`):
 | 7.2 정렬 | 회차 시작 시각 내림차순 |
 | 7.2 응답 항목 | `reservationId`, `sessionId`, `programName`, `programType`, `instructorName`, `startAt`, `endAt`, `location`, `sessionStatus`, `reservationStatus`, `waitingPosition`(WAITING 만), `requestedAt`, `confirmedAt`, `cancelledAt` |
 | 7.3 권한 | `MEMBER` 만. 남의 예약 403, 없는 예약 404 |
-| 7.3 잠금 | 회차 행 `SELECT … FOR UPDATE` 후 예약 조회 (신청과 같은 순서) |
+| 7.3 잠금 | 회차 행 `SELECT … FOR UPDATE` 후 예약 조회 (신청과 같은 순서). 잠금 뒤 읽는 예약·확정 목록·첫 대기자도 잠금 조회 — 잠금 전 일반 조회로 고정된 REPEATABLE READ 스냅샷을 피함 (`loadtest/RESULTS.md`) |
 | 7.3 취소 불가 | `CANCELLED` 예약, 시작 시각이 지난 회차 → 409 `RESERVATION_NOT_CANCELLABLE` |
 | 7.3 메시지 | 확정 취소 「예약이 취소되었습니다.」, 대기 취소 「대기가 취소되었습니다.」 |
 | 7.3 승격 | 확정 취소 + 회차 `OPEN` + 확정 수 < 정원이면 가장 오래 기다린 대기 1명을 같은 트랜잭션에서 `CONFIRMED`. `CLOSED` 회차는 승격 안 함 |

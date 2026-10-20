@@ -118,7 +118,7 @@ public class ReservationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         ClassSession session = sessionRepository.findByIdForUpdate(sessionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-        Reservation reservation = reservationRepository.findById(reservationId)
+        Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         if (!reservation.getUser().getId().equals(userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
@@ -136,7 +136,7 @@ public class ReservationService {
 
         if (fromStatus == ReservationStatus.CONFIRMED && session.getSessionStatus() == SessionStatus.OPEN) {
             reservationRepository.flush();
-            long confirmed = reservationRepository.countBySessionIdAndReservationStatus(sessionId, ReservationStatus.CONFIRMED);
+            long confirmed = reservationRepository.findBySessionIdAndReservationStatus(sessionId, ReservationStatus.CONFIRMED).size();
             if (confirmed < session.getCapacity()) {
                 reservationRepository.findFirstBySessionIdAndReservationStatusOrderByRequestedAtAscIdAsc(
                         sessionId, ReservationStatus.WAITING).ifPresent(waiting -> {

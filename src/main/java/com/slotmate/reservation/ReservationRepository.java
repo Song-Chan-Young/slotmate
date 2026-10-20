@@ -2,7 +2,9 @@ package com.slotmate.reservation;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -32,7 +34,18 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Query("select r.session.id from Reservation r where r.id = :reservationId")
     Optional<Long> findSessionIdById(@Param("reservationId") Long reservationId);
 
+    // 아래 셋은 취소 트랜잭션용 잠금 조회. 회차 잠금 전에 한 조회(findSessionIdById)로 REPEATABLE READ 스냅샷이
+    // 고정되므로, 잠금을 기다린 뒤 일반 조회를 하면 앞 트랜잭션이 바꾼 값을 못 봄 → 잠금 조회는 최신 커밋 값을 읽음
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Reservation r where r.id = :reservationId")
+    Optional<Reservation> findByIdForUpdate(@Param("reservationId") Long reservationId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<Reservation> findBySessionIdAndReservationStatus(Long sessionId, ReservationStatus reservationStatus);
+
     /** 승격 대상 — 가장 오래 기다린 대기 (명세 10절 6) */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Reservation> findFirstBySessionIdAndReservationStatusOrderByRequestedAtAscIdAsc(
             Long sessionId, ReservationStatus reservationStatus);
 
