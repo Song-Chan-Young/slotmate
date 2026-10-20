@@ -80,7 +80,7 @@ class AuthApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isString())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresIn").value(3600))
+                .andExpect(jsonPath("$.expiresIn").value(2592000))
                 .andExpect(jsonPath("$.user.displayName").value("김지민"))
                 .andExpect(jsonPath("$.user.role").value("MEMBER"));
     }
