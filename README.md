@@ -125,6 +125,8 @@ docker compose up -d        # MariaDB 기동, 최초 1회 db/init/01_schema.sql 
 
 - 스키마를 다시 만들려면 `docker compose down -v` 로 볼륨까지 지운 뒤 다시 `up`
 - 데모 데이터: 앱 실행 중 `./db/demo/seed-demo.sh` (zsh·jq 필요). 기존 회차·예약·알림은 지워짐
+- 앱까지 컨테이너로: `docker compose --profile app up -d --build` (JDK 없이 Docker 만 필요)
+- CI: push·PR 마다 GitHub Actions 가 MariaDB 컨테이너에 붙여 전체 테스트 + 이미지 빌드 (`.github/workflows/ci.yml`)
 
 ## 주의
 
