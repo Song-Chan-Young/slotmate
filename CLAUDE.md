@@ -27,7 +27,7 @@
 | 3 초기화 | macOS 에서 빌드·DB 기동·`ddl-auto=validate` 확인. Windows 재확인은 안 함 |
 | 4 기본 기능 | 인증·권한 · 관리자 프로그램/회차 · 회원 조회 · 예약 생성 · 내 예약(7.2) · 취소(7.3) · 회차별 예약자(9.5) 끝 |
 | 5 정합성 | 자동 승격 · 이력 · 알림(8절) · 동시 요청 테스트 끝. 테스트 72개 통과 |
-| 6 품질·배포 | k6 부하 테스트(`loadtest/`) — 동시 취소 승격 버그 찾아 고침. Dockerfile·compose `app` 프로필·GitHub Actions CI. AWS 배포 끝(2026-10-20, 커밋 `35cd434` 빌드) — 아래 「배포」 |
+| 6 품질·배포 | k6 부하 테스트(`loadtest/`) — 동시 취소 승격 버그 찾아 고침. Dockerfile·compose `app` 프로필·GitHub Actions CI. AWS 배포 끝(2026-10-20, 커밋 `35cd434` 빌드) — 아래 「배포」. 쿼리 성능 점검(`loadtest/perf/`) — 대기 순번 N+1 수정, `ix_sessions_start` 추가(운영 RDS 미적용) |
 
 **한 것**
 - Boot 4.1.1 · Java 21 · Gradle(Groovy) · Web·Validation·Security·OAuth2 Resource Server·JPA·MariaDB·springdoc 3.1.1
