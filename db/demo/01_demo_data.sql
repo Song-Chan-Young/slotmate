@@ -1,0 +1,84 @@
+-- 데모 데이터 — 강사·프로그램·회차를 이번 주 월요일부터 오늘+13일까지 다시 만듦
+-- 예약·이력·알림·데모 회원도 지움 (관리자·.env 테스트 회원·직접 가입한 회원은 남김)
+-- 예약은 db/demo/seed-demo.sh 가 API 로 만듦
+
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE notifications;
+TRUNCATE TABLE reservation_histories;
+TRUNCATE TABLE reservations;
+TRUNCATE TABLE class_sessions;
+TRUNCATE TABLE programs;
+TRUNCATE TABLE instructors;
+SET FOREIGN_KEY_CHECKS = 1;
+
+DELETE FROM users WHERE email LIKE '%@demo.slotmate.dev';
+
+INSERT INTO instructors (instructor_id, name, specialty) VALUES
+    (1, '김하늘', '요가'),
+    (2, '박서연', '필라테스'),
+    (3, '최민호', 'GX·스피닝'),
+    (4, '정우진', 'PT·웨이트'),
+    (5, '윤소라', '스트레칭·요가'),
+    (6, '한도윤', '클라이밍'),
+    (7, '오지훈', '러닝'),
+    (8, '이수빈', '수영');
+
+INSERT INTO programs (program_id, program_type, name, description, default_duration_minutes, default_capacity) VALUES
+    (1,  'YOGA',    '기초 요가',       '호흡과 기본 자세로 몸을 푸는 입문 요가. 처음 오시는 분도 따라 할 수 있어요.', 50, 12),
+    (2,  'YOGA',    '파워 빈야사',     '동작을 이어 가며 근력과 유연성을 함께 기르는 중급 요가.', 60, 10),
+    (3,  'PILATES', '매트 필라테스',   '매트 위에서 코어를 단련하는 소그룹 필라테스.', 50, 8),
+    (4,  'PILATES', '기구 필라테스',   '리포머로 자세를 교정하는 4인 정원 수업.', 50, 4),
+    (5,  'GX',      '스피닝',          '음악에 맞춰 달리는 고강도 실내 사이클.', 45, 15),
+    (6,  'GX',      '줌바',            '라틴 음악에 맞춘 댄스 유산소.', 50, 20),
+    (7,  'PT',      'PT 1:1',          '트레이너와 1:1로 진행하는 맞춤 웨이트 트레이닝.', 50, 1),
+    (8,  'ETC',     '스트레칭 클래스', '하루를 마무리하는 전신 스트레칭.', 40, 15),
+    (9,  'ETC',     '실내 클라이밍',   '볼더링 기초와 안전 수칙을 배우는 입문 수업.', 90, 8),
+    (10, 'ETC',     '수영 기초',       '호흡과 발차기부터 배우는 성인 초급반.', 50, 10),
+    (11, 'ETC',     '러닝 크루',       '주말 아침 5km 함께 달리기.', 60, 20);
+
+-- 주간 시간표 틀. dows 는 WEEKDAY() 값(0=월 … 6=일)을 이은 문자열
+CREATE TEMPORARY TABLE demo_slots (
+    program_id BIGINT, instructor_id BIGINT, start_time TIME, dows VARCHAR(7), location VARCHAR(150)
+);
+INSERT INTO demo_slots VALUES
+    (11, 7, '06:30', '56',      '한강 반포지구 집결'),
+    (5,  3, '07:00', '024',     'GX룸 B'),
+    (3,  2, '07:00', '13',      '3층 필라테스룸'),
+    (1,  1, '09:00', '01234',   '2층 요가룸'),
+    (4,  2, '10:00', '0123456', '3층 필라테스룸'),
+    (8,  5, '11:00', '56',      '2층 요가룸'),
+    (7,  4, '12:00', '01234',   '웨이트존'),
+    (10, 8, '14:00', '135',     '지하 수영장'),
+    (7,  4, '15:00', '0123456', '웨이트존'),
+    (9,  6, '18:00', '024',     'B1 클라이밍월'),
+    (2,  1, '19:30', '024',     '2층 요가룸'),
+    (6,  3, '19:00', '13',      'GX룸 A'),
+    (5,  3, '20:00', '13',      'GX룸 B'),
+    (3,  2, '20:30', '024',     '3층 필라테스룸'),
+    (8,  5, '21:30', '01234',   '2층 요가룸');
+
+INSERT INTO class_sessions (program_id, instructor_id, start_at, end_at, capacity, location, session_status, created_by_user_id)
+WITH RECURSIVE days AS (
+    SELECT CURDATE() - INTERVAL WEEKDAY(CURDATE()) DAY AS d
+    UNION ALL
+    SELECT d + INTERVAL 1 DAY FROM days WHERE d < CURDATE() + INTERVAL 13 DAY
+)
+SELECT s.program_id, s.instructor_id,
+       TIMESTAMP(days.d, s.start_time),
+       TIMESTAMP(days.d, s.start_time) + INTERVAL p.default_duration_minutes MINUTE,
+       p.default_capacity, s.location,
+       IF(TIMESTAMP(days.d, s.start_time) < NOW(), 'COMPLETED', 'OPEN'),
+       (SELECT user_id FROM users WHERE role = 'ADMIN' ORDER BY user_id LIMIT 1)
+FROM days
+JOIN demo_slots s ON INSTR(s.dows, WEEKDAY(days.d)) > 0
+JOIN programs p ON p.program_id = s.program_id
+ORDER BY days.d, s.start_time;
+
+-- 상태 다양화: 마지막 주 일부는 준비 중, 다음 주 수영 한 회차는 강사 사정으로 취소
+UPDATE class_sessions SET session_status = 'DRAFT'
+WHERE start_at >= CURDATE() + INTERVAL 12 DAY AND program_id IN (2, 9);
+UPDATE class_sessions SET session_status = 'CANCELLED'
+WHERE start_at >= CURDATE() + INTERVAL 7 DAY AND program_id = 10
+ORDER BY start_at LIMIT 1;
+
+DROP TEMPORARY TABLE demo_slots;

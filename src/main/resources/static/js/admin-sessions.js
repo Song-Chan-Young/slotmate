@@ -80,8 +80,9 @@ function renderGrid(items) {
     DOW[dayOfWeek(d)], el('small', {}, `${Number(d.slice(5, 7))}/${Number(d.slice(8))}`))));
 
   const hours = el('div', { class: 'tt-hours', style: `height:${height}px` });
-  for (let h = startHour + 1; h < endHour; h++) {
-    hours.append(el('span', { class: 'tt-hour', style: `top:${(h - startHour) * HOUR_PX}px` }, `${String(h).padStart(2, '0')}:00`));
+  for (let h = startHour; h < endHour; h++) {
+    hours.append(el('span', { class: 'tt-hour' + (h === startHour ? ' first' : ''), style: `top:${(h - startHour) * HOUR_PX}px` },
+      `${String(h).padStart(2, '0')}:00`));
   }
   cells.push(hours);
 
@@ -94,20 +95,23 @@ function renderGrid(items) {
       const blockHeight = Math.min(duration / 60 * HOUR_PX, height - top(startMin)) - 2;
       const counts = `${s.confirmedCount}/${s.capacity}${s.waitingCount ? ` · 대기 ${s.waitingCount}` : ''}`;
       const statusText = SESSION_STATUS[s.sessionStatus][0];
-      // 3줄이 안 들어가는 짧은 수업은 2줄로. 칸을 나눈 블록은 시작 시각만
-      const compact = blockHeight < 56;
-      const time = lanes > 1 ? hhmm(s.startAt) : `${hhmm(s.startAt)}–${hhmm(s.endAt)}`;
+      // 3줄이 안 들어가는 짧은 수업은 2줄로. 칸을 나눈 블록은 이름을 줄바꿈하고 시작 시각·인원만 (상태는 색으로)
+      const narrow = lanes > 1;
+      const compact = !narrow && blockHeight < 56;
+      const time = narrow ? `${hhmm(s.startAt)} · ${counts}` : `${hhmm(s.startAt)}–${hhmm(s.endAt)}`;
       col.append(el('button', {
-        class: 'tt-block s-' + s.sessionStatus,
+        class: 'tt-block s-' + s.sessionStatus + (narrow ? ' narrow' : ''),
         style: `top:${top(startMin)}px;height:${blockHeight}px;`
           + `left:calc(3px + (100% - 6px) * ${lane} / ${lanes});width:calc((100% - 6px) / ${lanes} - 2px)`,
         title: `${s.programName} ${hhmm(s.startAt)}–${hhmm(s.endAt)} · ${counts} · ${statusText}`,
         onclick: () => openForm(s),
       },
       el('b', {}, s.programName),
-      compact
-        ? el('span', {}, `${hhmm(s.startAt)} · ${counts} · ${statusText}`)
-        : [el('span', {}, time), el('span', {}, `${counts} · ${statusText}`)]));
+      narrow
+        ? el('span', {}, time)
+        : compact
+          ? el('span', {}, `${hhmm(s.startAt)} · ${counts} · ${statusText}`)
+          : [el('span', {}, time), el('span', {}, `${counts} · ${statusText}`)]));
     });
     cells.push(col);
   });

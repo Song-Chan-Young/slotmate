@@ -42,6 +42,7 @@
 - 화면(static): 회원 홈·상세·내 예약·알림 · 관리자 대시보드·시간표·프로그램·회차별 예약·회원
 - 오류 응답 `{code, message, fieldErrors}` — `common/error/ErrorCode`
 - 테스트는 로컬 MariaDB 에 붙어 돌고 각 테스트 롤백 (`support/ApiTestSupport`)
+- 데모 데이터: 앱 실행 중 `./db/demo/seed-demo.sh` — 회차·예약·알림을 지우고 이번 주 월요일~오늘+13일로 다시 만듦 (macOS·zsh·jq)
 
 **정한 것**
 - 화면은 나중. API 먼저(Swagger 로 확인)
