@@ -22,6 +22,24 @@
 - 관리자 프로그램·회차 관리
 - 인앱 알림 및 예약 상태 변경 이력
 
+## 화면
+
+데모 데이터(`db/demo/seed-demo.sh`)로 찍은 화면
+
+| 회원 — 수업 찾기 | 관리자 — 대시보드 |
+|---|---|
+| ![회원 수업 찾기](docs/assets/screens/member-home.png) | ![관리자 대시보드](docs/assets/screens/admin-dashboard.png) |
+| **회원 — 내 예약** | **회원 — 알림 (자동 승격 포함)** |
+| ![내 예약](docs/assets/screens/member-my.png) | ![알림](docs/assets/screens/member-notifications.png) |
+| **관리자 — 회차별 예약 (취소 → 대기 자동 승격)** | **관리자 — 주간 시간표** |
+| ![회차별 예약](docs/assets/screens/admin-reservations.png) | ![주간 시간표](docs/assets/screens/admin-timetable.png) |
+
+<details>
+<summary>모바일 — 수업 찾기</summary>
+
+<img src="docs/assets/screens/member-home-mobile.png" width="320" alt="모바일 수업 찾기">
+</details>
+
 ## 문서
 
 - [프로젝트 개요](docs/00_PROJECT_OVERVIEW.md)
