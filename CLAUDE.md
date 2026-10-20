@@ -27,7 +27,7 @@
 | 3 초기화 | macOS 에서 빌드·DB 기동·`ddl-auto=validate` 확인. Windows 재확인은 안 함 |
 | 4 기본 기능 | 인증·권한 · 관리자 프로그램/회차 · 회원 조회 · 예약 생성 · 내 예약(7.2) · 취소(7.3) · 회차별 예약자(9.5) 끝 |
 | 5 정합성 | 자동 승격 · 이력 · 알림(8절) · 동시 요청 테스트 끝. 테스트 72개 통과 |
-| 6 품질·배포 | k6 부하 테스트(`loadtest/`) — 동시 취소 승격 버그 찾아 고침. Dockerfile·compose `app` 프로필·GitHub Actions CI. 배포는 AWS EC2 로 정함(안 함) |
+| 6 품질·배포 | k6 부하 테스트(`loadtest/`) — 동시 취소 승격 버그 찾아 고침. Dockerfile·compose `app` 프로필·GitHub Actions CI. AWS 배포 끝(2026-10-20, 커밋 `35cd434` 빌드) — 아래 「배포」 |
 
 **한 것**
 - Boot 4.1.1 · Java 21 · Gradle(Groovy) · Web·Validation·Security·OAuth2 Resource Server·JPA·MariaDB·springdoc 3.1.1
@@ -61,6 +61,22 @@ macOS(집) 메모
 - Docker 는 Docker Desktop 대신 colima (`brew install colima docker docker-compose`, `colima start`)
 - 기본 java 가 26 이라 `export JAVA_HOME=$(/usr/libexec/java_home -v 21)` 후 gradlew 실행
 - 재부팅 후: `colima start` → `docker compose up -d` → `./gradlew bootRun`
+
+## 배포 (AWS 서울, 무료 플랜 크레딧)
+
+| 항목 | 값 |
+|---|---|
+| 주소 | https://43-200-0-75.sslip.io (탄력적 IP 43.200.0.75) |
+| 앱 | EC2 `slotmate-app` t4g.micro · AL2023 · `/opt/slotmate/app.jar` · systemd `slotmate` · 환경 파일 `/etc/slotmate/env` |
+| DB | RDS `slotmate-db` MariaDB 11.4.13 · 파라미터 그룹 `slotmate-mariadb114`(time_zone Asia/Seoul, utf8mb4) · 퍼블릭 접근 끔 |
+| 웹 | nginx → 127.0.0.1:8080 · certbot 인증서 · `certbot-renew.timer` |
+| 접속 정보 | 집 맥북 `~/.slotmate-aws/env`(DB·관리자 비밀번호, 보안 그룹 ID) · SSH 키 `~/.ssh/slotmate.pem` · SSH 는 집 IP 만 허용 |
+| AWS CLI | IAM 사용자 `slotmate-cli` · 리전 `ap-northeast-2` |
+| 요금 | 무료 플랜(2027-04-20 까지) · 크레딧 차감만 · 예산 알림 `zero-spend` |
+
+- 재배포: `./gradlew bootJar` → jar 를 `/opt/slotmate/app.jar` 로 올림 → `sudo systemctl restart slotmate` (CI 자동 배포는 안 함)
+- 데모 데이터 공개 계정: `demo@slotmate.dev` (README 에 공개). 관리자 계정은 비공개
+- 데모 데이터 다시 넣기: `seed-demo.sh` 는 로컬 docker 전용 — 운영은 `sql()` 을 SSH 경유로 바꾼 사본으로 실행함(저장소에 없음)
 
 ## 알아둘 것
 

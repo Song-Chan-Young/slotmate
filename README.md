@@ -4,6 +4,17 @@
 
 > 한 줄 소개: 피트니스 센터의 PT·요가·GX 시간표를 관리하고, 예약 취소가 발생하면 대기자를 자동 승격하는 서비스.
 
+## 데모
+
+| 항목 | 주소·계정 |
+|---|---|
+| 서비스 | https://43-200-0-75.sslip.io |
+| API 문서 (Swagger) | https://43-200-0-75.sslip.io/swagger-ui/index.html |
+| 데모 회원 | `demo@slotmate.dev` / `demo1234!` — 공개용 데모 계정, 예약·대기·승격 알림이 들어 있음 |
+
+- 회원가입으로 새 계정을 만들어 써 볼 수도 있음
+- 데모 데이터: 이번 주 월요일 ~ 오늘+13일 회차 117개, 예약·대기·취소·자동 승격은 실제 API 로 만듦
+
 ## 프로젝트 방향
 
 - 목표: Java/Spring 백엔드 경력직 이직을 위한 실무형 포트폴리오
@@ -68,6 +79,27 @@ k6 로 회원 200명이 정원 4명 회차에 동시 신청 → 확정자 4명�
 - 통합 테스트 72개 — 실제 MariaDB(Docker)에 붙어 실행, 테스트마다 롤백
 - 동시성 테스트 4개 — 스레드별 트랜잭션이 커밋돼야 하므로 롤백 대신 직접 정리: 마지막 한 자리 동시 신청 · 같은 회원 중복 신청 · 취소와 신청 동시 · 확정자 동시 취소
 - 부하 테스트 — `./loadtest/run.sh [회원 수] [정원]` (k6)
+
+### 4. 배포 — AWS
+
+```
+브라우저 ──https──▶ nginx ──▶ Spring Boot (EC2) ──3306──▶ MariaDB (RDS)
+                   Let's Encrypt     systemd                외부 접속 차단
+```
+
+| 항목 | 구성 |
+|---|---|
+| 앱 서버 | EC2 t4g.micro (ARM) · Amazon Linux 2023 · Java 21 · systemd 서비스 |
+| DB | RDS MariaDB 11.4 (db.t4g.micro) · 퍼블릭 접근 끔 · 앱 서버 보안 그룹에서만 3306 허용 |
+| 웹 | nginx 리버스 프록시 · Let's Encrypt 인증서 자동 갱신 · http → https 리다이렉트 |
+| 설정 | 접속 정보·JWT 키는 서버의 환경 파일(권한 640)에만. 저장소에 없음 |
+
+**배포하며 맞춘 것**
+
+| 증상 | 원인 | 조치 |
+|---|---|---|
+| 예약 시각이 9시간 어긋날 수 있음 | 로컬 DB 는 KST, RDS 기본값은 UTC | RDS 파라미터 그룹 `time_zone=Asia/Seoul` |
+| 데모 시드 중 한글 INSERT 실패 (`Incorrect string value`) | RDS 서버 기본 문자셋 latin1 — 문자셋 없이 만든 임시 테이블이 latin1 로 생성 | 파라미터 그룹 `character_set_server=utf8mb4`, `collation_server=utf8mb4_unicode_ci` + DB 기본 문자셋 변경 |
 
 ## 화면
 
