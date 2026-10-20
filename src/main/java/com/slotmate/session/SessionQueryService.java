@@ -78,6 +78,7 @@ public class SessionQueryService {
                 : reservationRepository.findBySessionIdInAndUserId(ids, userId).stream()
                 .filter(Reservation::isActive)
                 .collect(Collectors.toMap(r -> r.getSession().getId(), Function.identity()));
+        Map<Long, Long> myPositions = reservationRepository.waitingPositions(mine.values());
 
         LocalDateTime now = SeoulTime.now();
         return sessions.stream().map(s -> {
@@ -86,8 +87,7 @@ public class SessionQueryService {
             long waiting = c.getOrDefault(ReservationStatus.WAITING, 0L);
             Reservation my = mine.get(s.getId());
             ReservationStatus myStatus = my == null ? null : my.getReservationStatus();
-            Long myPosition = myStatus == ReservationStatus.WAITING
-                    ? reservationRepository.countWaitingUpTo(s.getId(), my.getRequestedAt(), my.getId()) : null;
+            Long myPosition = my == null ? null : myPositions.get(my.getId());
             return new SessionItem(s.getId(), s.getProgram().getId(), s.getProgram().getName(),
                     s.getProgram().getProgramType(), s.getInstructor() == null ? null : s.getInstructor().getName(),
                     SeoulTime.toOffset(s.getStartAt()), SeoulTime.toOffset(s.getEndAt()),

@@ -285,6 +285,7 @@ CREATE TABLE class_sessions (
     KEY ix_sessions_program_start (program_id, start_at),
     KEY ix_sessions_status_start (session_status, start_at),
     KEY ix_sessions_instructor_start (instructor_id, start_at),
+    KEY ix_sessions_start (start_at),
     CONSTRAINT fk_sessions_program FOREIGN KEY (program_id)
         REFERENCES programs (program_id),
     CONSTRAINT fk_sessions_instructor FOREIGN KEY (instructor_id)
@@ -398,6 +399,7 @@ CREATE TABLE notifications (
 | `users(email)` UNIQUE | 이메일 중복 방지 및 로그인 조회 |
 | `class_sessions(program_id, start_at)` | 프로그램별 예정 회차 조회 |
 | `class_sessions(session_status, start_at)` | 예약 오픈 회차/오늘의 회차 조회 |
+| `class_sessions(start_at)` | 날짜 범위 회차 조회(회원 날짜별 목록·관리자 주간 시간표). 2026-10-20 추가 — 위 인덱스는 `status <> 'DRAFT'`·상태 조건 없음일 때 날짜 범위로 못 좁힘 (`loadtest/perf/RESULTS.md`) |
 | `reservations(session_id, user_id)` UNIQUE | 동일 회원의 동일 회차 중복 예약 방지 |
 | `reservations(session_id, reservation_status, requested_at, reservation_id)` | 확정 인원 집계와 대기 순서 조회 지원 |
 | `reservations(user_id, reservation_status, requested_at)` | 내 예약 목록 조회 |

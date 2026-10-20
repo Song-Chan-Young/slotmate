@@ -57,6 +57,7 @@ CREATE TABLE class_sessions (
     KEY ix_sessions_program_start (program_id, start_at),
     KEY ix_sessions_status_start (session_status, start_at),
     KEY ix_sessions_instructor_start (instructor_id, start_at),
+    KEY ix_sessions_start (start_at),
     CONSTRAINT fk_sessions_program FOREIGN KEY (program_id)
         REFERENCES programs (program_id),
     CONSTRAINT fk_sessions_instructor FOREIGN KEY (instructor_id)

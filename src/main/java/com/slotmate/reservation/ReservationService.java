@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -105,7 +106,8 @@ public class ReservationService {
                 Sort.by(Sort.Order.desc("session.startAt"), Sort.Order.desc("id")));
         Page<Reservation> reservations = reservationRepository.searchMine(userId, status,
                 from == null ? null : from.atStartOfDay(), to == null ? null : to.plusDays(1).atStartOfDay(), pageable);
-        return PageResponse.of(reservations, r -> MyReservationItem.of(r, waitingPosition(r)));
+        Map<Long, Long> positions = reservationRepository.waitingPositions(reservations.getContent());
+        return PageResponse.of(reservations, r -> MyReservationItem.of(r, positions.get(r.getId())));
     }
 
     /**
@@ -159,13 +161,8 @@ public class ReservationService {
             throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
         }
         PageRequest pageable = PageRequest.of(page, size, Sort.by("requestedAt", "id"));
-        return PageResponse.of(reservationRepository.searchBySession(sessionId, status, pageable),
-                r -> SessionReservationItem.of(r, waitingPosition(r)));
-    }
-
-    private Long waitingPosition(Reservation r) {
-        return r.getReservationStatus() == ReservationStatus.WAITING
-                ? reservationRepository.countWaitingUpTo(r.getSession().getId(), r.getRequestedAt(), r.getId())
-                : null;
+        Page<Reservation> reservations = reservationRepository.searchBySession(sessionId, status, pageable);
+        Map<Long, Long> positions = reservationRepository.waitingPositions(reservations.getContent());
+        return PageResponse.of(reservations, r -> SessionReservationItem.of(r, positions.get(r.getId())));
     }
 }

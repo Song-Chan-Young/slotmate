@@ -11,7 +11,9 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
@@ -29,6 +31,25 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             """)
     long countWaitingUpTo(@Param("sessionId") Long sessionId, @Param("requestedAt") LocalDateTime requestedAt,
                           @Param("reservationId") Long reservationId);
+
+    /** 여러 예약의 대기 순번을 쿼리 한 번으로 (countWaitingUpTo 와 같은 기준). 결과 행 = [reservationId, 순번] */
+    @Query("""
+            select r.id, (select count(w) from Reservation w
+                          where w.session = r.session
+                            and w.reservationStatus = com.slotmate.reservation.ReservationStatus.WAITING
+                            and (w.requestedAt < r.requestedAt or (w.requestedAt = r.requestedAt and w.id <= r.id)))
+            from Reservation r where r.id in :reservationIds
+            """)
+    List<Object[]> countWaitingPositions(@Param("reservationIds") Collection<Long> reservationIds);
+
+    /** 목록 화면용 — WAITING 예약만 골라 예약 ID → 대기 순번. 목록 건수만큼 쿼리가 나가지 않게 함 */
+    default Map<Long, Long> waitingPositions(Collection<Reservation> reservations) {
+        List<Long> ids = reservations.stream()
+                .filter(r -> r.getReservationStatus() == ReservationStatus.WAITING)
+                .map(Reservation::getId).toList();
+        if (ids.isEmpty()) return Map.of();
+        return countWaitingPositions(ids).stream().collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
+    }
 
     /** 취소 시 회차 잠금을 먼저 잡기 위해 회차 ID 만 조회 */
     @Query("select r.session.id from Reservation r where r.id = :reservationId")
