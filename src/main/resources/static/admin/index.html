@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SlotMate 관리자 — 수업 관리</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<main class="container wide">
+  <div class="admin-head">
+    <h1>수업 관리</h1>
+    <span class="spacer"></span>
+    <button class="btn primary" id="create">+ 수업 등록</button>
+  </div>
+  <div class="admin-head">
+    <button class="btn small" id="prev" aria-label="이전 주">‹</button>
+    <span class="week-label" id="week-label"></span>
+    <button class="btn small" id="next" aria-label="다음 주">›</button>
+    <button class="btn small" id="today">오늘</button>
+    <span class="spacer"></span>
+    <select id="type" style="width:auto">
+      <option value="">전체 종류</option>
+    </select>
+    <select id="status" style="width:auto">
+      <option value="">전체 상태</option>
+    </select>
+  </div>
+
+  <div class="timetable" id="timetable"></div>
+  <div class="day-list" id="day-list"></div>
+  <div class="legend" id="legend"></div>
+</main>
+
+<script src="/js/common.js"></script>
+<script src="/js/admin-common.js"></script>
+<script src="/js/admin-sessions.js"></script>
+</body>
+</html>

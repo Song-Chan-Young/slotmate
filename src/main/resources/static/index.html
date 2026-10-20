@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SlotMate — 수업 찾기</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<main class="container">
+  <h1 id="greeting">수업 찾기</h1>
+  <p class="muted" id="selected-date"></p>
+
+  <div class="toolbar">
+    <div class="dates" id="dates" aria-label="날짜 선택"></div>
+    <div class="filters">
+      <div id="types" role="group" aria-label="프로그램 필터"></div>
+      <input class="search" id="keyword" type="search" placeholder="프로그램명 또는 강사명 검색">
+    </div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+  <div class="session-list" id="list"></div>
+</main>
+
+<script src="/js/common.js"></script>
+<script src="/js/booking.js"></script>
+<script src="/js/home.js"></script>
+</body>
+</html>

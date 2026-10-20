@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SlotMate — 로그인</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<main class="container narrow">
+  <div class="card" style="margin-top:24px">
+    <div class="tabs" role="tablist">
+      <button type="button" id="tab-login" class="active" role="tab">로그인</button>
+      <button type="button" id="tab-signup" role="tab">회원가입</button>
+    </div>
+
+    <form id="login-form" novalidate>
+      <div class="form-error hidden"></div>
+      <div class="field">
+        <label for="login-email">이메일</label>
+        <input id="login-email" name="email" type="email" autocomplete="username" required>
+        <div class="field-error" data-for="email"></div>
+      </div>
+      <div class="field">
+        <label for="login-password">비밀번호</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+        <div class="field-error" data-for="password"></div>
+      </div>
+      <button class="btn primary" style="width:100%">로그인</button>
+    </form>
+
+    <form id="signup-form" class="hidden" novalidate>
+      <div class="form-error hidden"></div>
+      <div class="field">
+        <label for="signup-name">이름</label>
+        <input id="signup-name" name="displayName" maxlength="80" autocomplete="name" required>
+        <div class="field-error" data-for="displayName"></div>
+      </div>
+      <div class="field">
+        <label for="signup-email">이메일</label>
+        <input id="signup-email" name="email" type="email" maxlength="255" autocomplete="email" required>
+        <div class="field-error" data-for="email"></div>
+      </div>
+      <div class="field">
+        <label for="signup-password">비밀번호 <span class="muted">(8~64자)</span></label>
+        <input id="signup-password" name="password" type="password" maxlength="64" autocomplete="new-password" required>
+        <div class="field-error" data-for="password"></div>
+      </div>
+      <button class="btn primary" style="width:100%">가입하고 로그인</button>
+    </form>
+  </div>
+</main>
+
+<script src="/js/common.js"></script>
+<script src="/js/login.js"></script>
+</body>
+</html>

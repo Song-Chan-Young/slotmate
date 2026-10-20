@@ -53,6 +53,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // 정적 화면(static/). 데이터는 API 가 권한 검사
+                        .requestMatchers(HttpMethod.GET, "/", "/*.html", "/admin/*.html", "/css/**", "/js/**",
+                                "/favicon.ico").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // 명세 6절 회원용 조회는 공개. 토큰이 오면 본인 예약 상태를 함께 반환
                         .requestMatchers(HttpMethod.GET, "/api/v1/programs/**", "/api/v1/sessions/**").permitAll()
