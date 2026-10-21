@@ -58,6 +58,7 @@ function row(r) {
   return el('tr', {},
     el('td', {}, r.waitingPosition ? `대기 ${r.waitingPosition}` : '-'),
     el('td', {}, el('b', {}, r.memberDisplayName), el('br'), el('span', { class: 'muted', style: 'font-size:13px' }, r.memberEmail)),
+    el('td', {}, `${r.partySize}명`),
     el('td', {}, el('span', { class: 'badge ' + tone }, text)),
     el('td', {}, dateTime(r.requestedAt)),
     el('td', {}, dateTime(r.confirmedAt), promoted ? el('span', { class: 'badge wait', style: 'margin-left:6px' }, '자동 승격') : null),
@@ -72,14 +73,14 @@ async function loadPage() {
     if (state.page === 0) rows.replaceChildren();
     rows.append(...page.items.map(row));
     if (!rows.children.length) {
-      rows.append(el('tr', {}, el('td', { colspan: 6, class: 'muted', style: 'text-align:center;padding:32px' },
+      rows.append(el('tr', {}, el('td', { colspan: 7, class: 'muted', style: 'text-align:center;padding:32px' },
         state.status ? '해당하는 예약이 없습니다' : '아직 예약자가 없습니다')));
     }
     state.totalPages = page.page.totalPages;
     document.getElementById('more').classList.toggle('hidden', state.page + 1 >= state.totalPages);
   } catch (e) {
     if (handleAdminError(e)) return;
-    rows.replaceChildren(el('tr', {}, el('td', { colspan: 6, style: 'text-align:center;padding:32px' },
+    rows.replaceChildren(el('tr', {}, el('td', { colspan: 7, style: 'text-align:center;padding:32px' },
       e.status === 404 ? '수업을 찾을 수 없습니다.' : e.message)));
   }
 }

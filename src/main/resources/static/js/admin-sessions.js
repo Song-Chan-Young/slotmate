@@ -26,7 +26,7 @@ let instructors = [];
 // ---- 필터 ----
 
 const typeSelect = document.getElementById('type');
-Object.entries(PROGRAM_TYPES).forEach(([v, l]) => typeSelect.append(el('option', { value: v }, l)));
+typeSelect.append(...typeOptions(null));
 typeSelect.onchange = () => { state.type = typeSelect.value; load(); };
 const statusSelect = document.getElementById('status');
 Object.entries(SESSION_STATUS).forEach(([v, [l]]) => statusSelect.append(el('option', { value: v }, l)));

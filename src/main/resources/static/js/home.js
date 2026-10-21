@@ -1,11 +1,11 @@
-// M01·M02 — 날짜·필터를 바꾸면 GET /sessions?date= 로 시간순 카드 목록
+// M01·M02 — 날짜·카테고리·종류를 바꾸면 GET /sessions?date= 로 시간순 카드 목록 (카테고리는 확장 설계 v0.1 5절)
 
-const TYPE_FILTERS = [['', '전체'], ...Object.entries(PROGRAM_TYPES)];
 const DATE_RANGE = 14;
 
 const params = new URLSearchParams(location.search);
 const state = {
   date: params.get('date') || todaySeoul(),
+  category: params.get('category') || '',
   type: params.get('type') || '',
   keyword: params.get('keyword') || '',
 };
@@ -17,6 +17,7 @@ if (user) document.getElementById('greeting').textContent = `${user.displayName}
 function syncUrl() {
   const q = new URLSearchParams();
   if (state.date !== todaySeoul()) q.set('date', state.date);
+  if (state.category) q.set('category', state.category);
   if (state.type) q.set('type', state.type);
   if (state.keyword) q.set('keyword', state.keyword);
   history.replaceState(null, '', q.toString() ? '?' + q : location.pathname);
@@ -38,8 +39,22 @@ function renderDates() {
   document.getElementById('selected-date').textContent = prettyDate(state.date);
 }
 
+function renderCategories() {
+  const tabs = [['', '전체'], ...Object.entries(CATEGORIES).map(([value, [label]]) => [value, label])];
+  document.getElementById('categories').replaceChildren(...tabs.map(([value, label]) =>
+    el('button', {
+      class: state.category === value ? 'active' : null,
+      role: 'tab',
+      'aria-selected': state.category === value ? 'true' : 'false',
+      onclick: () => { state.category = value; state.type = ''; refresh(); },
+    }, label)));
+}
+
+/** 카테고리를 고르면 그 안의 세부 종류 칩 */
 function renderTypes() {
-  document.getElementById('types').replaceChildren(...TYPE_FILTERS.map(([value, label]) =>
+  const types = state.category ? CATEGORIES[state.category][1] : [];
+  const filters = types.length ? [['', '전체'], ...types.map((t) => [t, PROGRAM_TYPES[t]])] : [];
+  document.getElementById('types').replaceChildren(...filters.map(([value, label]) =>
     el('button', {
       class: 'chip' + (state.type === value ? ' active' : ''),
       'aria-pressed': state.type === value ? 'true' : 'false',
@@ -77,18 +92,21 @@ let requestSeq = 0;
 async function refresh() {
   syncUrl();
   renderDates();
+  renderCategories();
   renderTypes();
   const seq = ++requestSeq;
   const list = document.getElementById('list');
   list.replaceChildren(el('div', { class: 'empty' }, '불러오는 중…'));
   try {
-    const page = await api('/sessions', { query: { date: state.date, type: state.type, keyword: state.keyword, size: 100 } });
+    const page = await api('/sessions', {
+      query: { date: state.date, category: state.category, type: state.type, keyword: state.keyword, size: 100 },
+    });
     if (seq !== requestSeq) return;
     renderSummary(page.items);
     list.replaceChildren(...(page.items.length
       ? page.items.map(sessionCard)
       : [el('div', { class: 'empty' },
-          el('p', {}, '선택한 날짜에 등록된 수업이 없습니다'),
+          el('p', {}, state.category ? `선택한 날짜에 ${CATEGORIES[state.category][0]} 일정이 없습니다` : '선택한 날짜에 등록된 일정이 없습니다'),
           el('button', { class: 'btn', onclick: () => { state.date = addDays(state.date, 1); refresh(); } }, '다음 날 보기'))]));
   } catch (e) {
     if (seq !== requestSeq) return;

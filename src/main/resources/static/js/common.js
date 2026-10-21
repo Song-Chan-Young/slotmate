@@ -136,7 +136,24 @@ function prettyDate(ymd) {
   return `${Number(m)}월 ${Number(d)}일 (${DOW[dayOfWeek(ymd)]})`;
 }
 
-const PROGRAM_TYPES = { PT: 'PT', YOGA: '요가', GX: 'GX', PILATES: '필라테스', ETC: '기타' };
+const PROGRAM_TYPES = {
+  PT: 'PT', YOGA: '요가', GX: 'GX', PILATES: '필라테스', ETC: '기타 운동',
+  CRAFT: '공예', COOKING: '요리', ART: '미술', CLASS_ETC: '기타 클래스',
+  TOUR: '투어', EXPERIENCE: '체험', LEISURE: '레저',
+};
+// 확장 설계 v0.1 2절 — 카테고리 → [이름, 세부 종류]
+const CATEGORIES = {
+  EXERCISE: ['운동', ['PT', 'YOGA', 'GX', 'PILATES', 'ETC']],
+  CLASS: ['원데이클래스', ['CRAFT', 'COOKING', 'ART', 'CLASS_ETC']],
+  ACTIVITY: ['놀거리', ['TOUR', 'EXPERIENCE', 'LEISURE']],
+};
+/** select 용 — 카테고리별 optgroup. selected 는 고른 종류 */
+function typeOptions(selected) {
+  return Object.entries(CATEGORIES).map(([, [label, types]]) => el('optgroup', { label },
+    types.map((t) => el('option', { value: t, selected: t === selected }, PROGRAM_TYPES[t]))));
+}
+/** 2명 이상일 때만 「 · 3명」 */
+function partyText(n) { return n > 1 ? ` · ${n}명` : ''; }
 
 const SESSION_STATUS = {
   DRAFT: ['준비 중', 'off'],

@@ -38,9 +38,10 @@ done
 ME=$(login "$MEMBER_EMAIL" "$MEMBER_PASSWORD")
 sql < "$ROOT/db/demo/02_past_reservations.sql"
 
-# reserve <토큰> <회차 id> → 예약 id (실패하면 빈 값)
+# reserve <토큰> <회차 id> [인원] → 예약 id (실패하면 빈 값)
 reserve() {
-  curl -s -X POST "$BASE/api/v1/sessions/$2/reservations" -H "Authorization: Bearer $1" | jq -r '.reservationId // empty'
+  curl -s -X POST "$BASE/api/v1/sessions/$2/reservations" -H "Authorization: Bearer $1" \
+    -H 'Content-Type: application/json' -d "{\"partySize\": ${3:-1}}" | jq -r '.reservationId // empty'
 }
 cancel() {
   curl -sf -o /dev/null -X DELETE "$BASE/api/v1/reservations/$2" -H "Authorization: Bearer $1"
@@ -77,6 +78,23 @@ if [[ -n $s ]]; then
   reserve $ME $s > /dev/null
 fi
 
+# 다음 도자기 원데이(정원 8, 최대 4명): 4+4 로 가득 → 대기 테스트회원 3명 → 2명 → 1명
+# 첫 팀(4명) 취소 → 들어가는 팀부터 승격(first-fit): 3명 승격(남은 1) → 2명 건너뜀 → 1명 승격
+s=$(first_session "program_id = 12 AND DATE(start_at) >= CURDATE() + INTERVAL 1 DAY")
+if [[ -n $s ]]; then
+  SCRIPTED+=$s
+  r1=$(reserve ${TOKENS[1]} $s 4)
+  reserve ${TOKENS[2]} $s 4 > /dev/null
+  reserve $ME $s 3 > /dev/null
+  reserve ${TOKENS[3]} $s 2 > /dev/null
+  reserve ${TOKENS[4]} $s 1 > /dev/null
+  if [[ -n $r1 ]]; then cancel ${TOKENS[1]} $r1; fi
+fi
+
+# 다음 야경 투어: 테스트회원 일행 2명 확정
+s=$(first_session "program_id = 15 AND DATE(start_at) >= CURDATE() + INTERVAL 1 DAY")
+if [[ -n $s ]]; then SCRIPTED+=$s; reserve $ME $s 2 > /dev/null; fi
+
 # 오늘 남은 단체 수업 하나 · 내일 이후 요가 하나: 테스트 회원 확정
 for cond in "capacity >= 8 AND DATE(start_at) = CURDATE()" "program_id IN (1, 2) AND DATE(start_at) >= CURDATE() + INTERVAL 1 DAY"; do
   s=$(first_session "$cond")
@@ -91,13 +109,14 @@ if [[ -n $s ]]; then
 fi
 
 # 나머지 7일치 회차: 회차마다 정해진 수만큼 데모 회원 예약 (정원 작은 수업은 대기까지)
-for row in ${(f)"$(sql -e "SELECT session_id, capacity FROM class_sessions WHERE session_status = 'OPEN' AND start_at > NOW() AND start_at < CURDATE() + INTERVAL 7 DAY")"}; do
-  sid=${row%%$'\t'*}; cap=${row##*$'\t'}
+for row in ${(f)"$(sql -e "SELECT s.session_id, s.capacity, p.max_party_size FROM class_sessions s JOIN programs p USING (program_id) WHERE s.session_status = 'OPEN' AND s.start_at > NOW() AND s.start_at < CURDATE() + INTERVAL 7 DAY")"}; do
+  sid=${row%%$'\t'*}; rest=${row#*$'\t'}; cap=${rest%%$'\t'*}; maxp=${rest##*$'\t'}
   if (( ${SCRIPTED[(Ie)$sid]} )); then continue; fi
   max=$(( cap + 2 < 10 ? cap + 2 : 10 ))
+  if (( maxp > 1 )); then max=$(( cap / 2 + 1 )); fi  # 일행 예약 상품은 팀 수를 줄여 대기가 너무 길지 않게
   n=$(( sid * 7 % (max + 1) ))
   for (( i = 1; i <= n; i++ )); do
-    reserve ${TOKENS[$(( (sid + i) % 10 + 1 ))]} $sid > /dev/null
+    reserve ${TOKENS[$(( (sid + i) % 10 + 1 ))]} $sid $(( (sid + i) % maxp + 1 )) > /dev/null
   done
 done
 

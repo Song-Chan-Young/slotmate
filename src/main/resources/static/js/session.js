@@ -11,12 +11,13 @@ async function load() {
     document.getElementById('back').href = '/?date=' + ymdOf(s.startAt);
     const [badgeText, tone] = bookingView(s);
     const rows = [
-      ['종류', PROGRAM_TYPES[s.programType] || s.programType],
+      ['종류', `${CATEGORIES[s.category]?.[0] || s.category} · ${PROGRAM_TYPES[s.programType] || s.programType}`],
       ['일시', `${prettyDate(ymdOf(s.startAt))} ${hhmm(s.startAt)}–${hhmm(s.endAt)} (${minutesBetween(s.startAt, s.endAt)}분)`],
       ['강사', s.instructorName || '미정'],
       ['장소', s.location],
       ['정원', `${s.capacity}명 · 확정 ${s.confirmedCount}명 · 잔여 ${s.availableSeats}명`],
       ['대기', `${s.waitingCount}명`],
+      ['예약 인원', s.maxPartySize > 1 ? `한 번에 최대 ${s.maxPartySize}명` : null],
       ['수업 상태', statusBadge(s.sessionStatus)],
     ].filter(([, v]) => v !== null && v !== undefined && v !== '');
 

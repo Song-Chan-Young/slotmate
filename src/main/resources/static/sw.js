@@ -1,7 +1,7 @@
 // 서비스 워커 — 홈 화면 설치(PWA)용. 화면 파일만 캐시하고 API 는 절대 캐시하지 않음
 // (예약 현황·내 정보는 항상 서버 최신값이어야 하고, 로그인 정보가 기기에 남으면 안 됨)
 // 화면 파일을 바꿔 배포하면 VERSION 을 올림 → 이전 캐시 삭제
-const VERSION = 'slotmate-v1';
+const VERSION = 'slotmate-v2';
 const SHELL = ['/', '/index.html', '/login.html', '/my.html', '/notifications.html', '/session.html',
   '/css/app.css', '/js/common.js', '/icons/icon-192.png'];
 

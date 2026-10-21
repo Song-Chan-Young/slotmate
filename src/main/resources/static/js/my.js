@@ -29,7 +29,7 @@ function cancellable(r) {
 
 function card(r) {
   const [text, tone] = RESERVATION_VIEW[r.reservationStatus] || [r.reservationStatus, 'off'];
-  const badge = r.reservationStatus === 'WAITING' ? `대기 중 · ${r.waitingPosition}번째` : text;
+  const badge = (r.reservationStatus === 'WAITING' ? `대기 중 · ${r.waitingPosition}번째` : text) + partyText(r.partySize);
   return el('article', { class: 'session-card' },
     el('div', { class: 'time' }, hhmm(r.startAt), el('small', {}, prettyDate(ymdOf(r.startAt)))),
     el('div', {},
