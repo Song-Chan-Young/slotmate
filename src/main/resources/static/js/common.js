@@ -199,3 +199,8 @@ async function showUnreadCount() {
     // 개수 표시는 보조 정보라 실패해도 화면은 그대로
   }
 }
+
+// PWA — 홈 화면 설치용 서비스 워커 (HTTPS 또는 localhost 에서만 동작)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
