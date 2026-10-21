@@ -26,11 +26,12 @@ public class PublicProgramController {
     }
 
     @GetMapping
-    public PageResponse<ProgramItem> list(@RequestParam(required = false) ProgramType type,
+    public PageResponse<ProgramItem> list(@RequestParam(required = false) ProgramCategory category,
+                                          @RequestParam(required = false) ProgramType type,
                                           @RequestParam(required = false) String keyword,
                                           @RequestParam(defaultValue = "0") @Min(0) int page,
                                           @RequestParam(defaultValue = "20") @Min(1) int size) {
-        return programQueryService.list(type, keyword, page, size);
+        return programQueryService.list(category, type, keyword, page, size);
     }
 
     @GetMapping("/{programId}")

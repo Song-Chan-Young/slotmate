@@ -15,15 +15,22 @@ public final class ReservationDtos {
     private ReservationDtos() {
     }
 
+    /** 7.1 — 본문 생략·partySize 생략이면 1명 (확장 설계 v0.1 4절) */
+    public record ReserveRequest(Integer partySize) {
+        public int partySizeOrDefault() {
+            return partySize == null ? 1 : partySize;
+        }
+    }
+
     public record ReserveResponse(Long reservationId, Long sessionId, ReservationStatus reservationStatus,
-                                  Long waitingPosition, String message) {
+                                  int partySize, Long waitingPosition, String message) {
     }
 
     /** 7.2 — waitingPosition 은 WAITING 일 때만 */
     public record MyReservationItem(Long reservationId, Long sessionId, String programName, ProgramType programType,
                                     String instructorName, OffsetDateTime startAt, OffsetDateTime endAt,
                                     String location, SessionStatus sessionStatus,
-                                    ReservationStatus reservationStatus, Long waitingPosition,
+                                    ReservationStatus reservationStatus, int partySize, Long waitingPosition,
                                     OffsetDateTime requestedAt, OffsetDateTime confirmedAt,
                                     OffsetDateTime cancelledAt) {
         static MyReservationItem of(Reservation r, Long waitingPosition) {
@@ -32,7 +39,7 @@ public final class ReservationDtos {
             return new MyReservationItem(r.getId(), s.getId(), s.getProgram().getName(), s.getProgram().getProgramType(),
                     instructor == null ? null : instructor.getName(),
                     SeoulTime.toOffset(s.getStartAt()), SeoulTime.toOffset(s.getEndAt()),
-                    s.getLocation(), s.getSessionStatus(), r.getReservationStatus(), waitingPosition,
+                    s.getLocation(), s.getSessionStatus(), r.getReservationStatus(), r.getPartySize(), waitingPosition,
                     SeoulTime.toOffset(r.getRequestedAt()), SeoulTime.toOffset(r.getConfirmedAt()),
                     SeoulTime.toOffset(r.getCancelledAt()));
         }
@@ -43,13 +50,13 @@ public final class ReservationDtos {
 
     /** 9.5 — 회원 최소 정보만. confirmedAt 이 requestedAt 보다 늦으면 대기에서 승격된 것 */
     public record SessionReservationItem(Long reservationId, String memberDisplayName, String memberEmail,
-                                         ReservationStatus reservationStatus, Long waitingPosition,
+                                         ReservationStatus reservationStatus, int partySize, Long waitingPosition,
                                          OffsetDateTime requestedAt, OffsetDateTime confirmedAt,
                                          OffsetDateTime cancelledAt) {
         static SessionReservationItem of(Reservation r, Long waitingPosition) {
             User user = r.getUser();
             return new SessionReservationItem(r.getId(), user.getDisplayName(), user.getEmail(),
-                    r.getReservationStatus(), waitingPosition, SeoulTime.toOffset(r.getRequestedAt()),
+                    r.getReservationStatus(), r.getPartySize(), waitingPosition, SeoulTime.toOffset(r.getRequestedAt()),
                     SeoulTime.toOffset(r.getConfirmedAt()), SeoulTime.toOffset(r.getCancelledAt()));
         }
     }

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +47,7 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, Long
             left join fetch s.instructor i
             where s.startAt >= :from and s.startAt < :to
               and s.sessionStatus <> com.slotmate.session.SessionStatus.DRAFT
+              and p.programType in :types
               and (:type is null or p.programType = :type)
               and (:keyword is null or p.name like concat('%', :keyword, '%')
                    or i.name like concat('%', :keyword, '%'))
@@ -54,12 +56,13 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, Long
             select count(s) from ClassSession s join s.program p left join s.instructor i
             where s.startAt >= :from and s.startAt < :to
               and s.sessionStatus <> com.slotmate.session.SessionStatus.DRAFT
+              and p.programType in :types
               and (:type is null or p.programType = :type)
               and (:keyword is null or p.name like concat('%', :keyword, '%')
                    or i.name like concat('%', :keyword, '%'))
             """)
     Page<ClassSession> searchPublic(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
-                                    @Param("type") ProgramType type, @Param("keyword") String keyword,
+                                    @Param("types") Collection<ProgramType> types, @Param("type") ProgramType type, @Param("keyword") String keyword,
                                     Pageable pageable);
 
     /** 회원용 — DRAFT 는 없는 것으로 봄 */

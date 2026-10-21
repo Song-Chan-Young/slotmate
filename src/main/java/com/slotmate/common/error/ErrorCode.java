@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "입력값을 확인해 주세요."),
+    INVALID_PARTY_SIZE(HttpStatus.BAD_REQUEST, "예약 인원을 확인해 주세요."),
     UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),

@@ -36,6 +36,10 @@ public class Reservation {
     @Column(name = "reservation_status", nullable = false, length = 20)
     private ReservationStatus reservationStatus;
 
+    /** 예약 인원 — 정원은 자리 수로 셈 (확장 설계 v0.1 3.1) */
+    @Column(name = "party_size", nullable = false)
+    private int partySize;
+
     @Column(name = "attempt_no", nullable = false)
     private int attemptNo;
 
@@ -60,23 +64,25 @@ public class Reservation {
     }
 
     /** 첫 신청. status 는 CONFIRMED 또는 WAITING */
-    public static Reservation create(ClassSession session, User user, ReservationStatus status, LocalDateTime now) {
+    public static Reservation create(ClassSession session, User user, int partySize, ReservationStatus status,
+                                     LocalDateTime now) {
         Reservation reservation = new Reservation();
         reservation.session = session;
         reservation.user = user;
         reservation.attemptNo = 1;
-        reservation.apply(status, now);
+        reservation.apply(partySize, status, now);
         return reservation;
     }
 
-    /** 취소된 예약 재신청 — 같은 행을 쓰고 attemptNo 증가 (DB 설계서 3) */
-    public void rebook(ReservationStatus status, LocalDateTime now) {
+    /** 취소된 예약 재신청 — 같은 행을 쓰고 attemptNo 증가 (DB 설계서 3). 인원은 새로 받음 */
+    public void rebook(int partySize, ReservationStatus status, LocalDateTime now) {
         this.attemptNo++;
         this.cancelledAt = null;
-        apply(status, now);
+        apply(partySize, status, now);
     }
 
-    private void apply(ReservationStatus status, LocalDateTime now) {
+    private void apply(int partySize, ReservationStatus status, LocalDateTime now) {
+        this.partySize = partySize;
         this.reservationStatus = status;
         this.requestedAt = now;
         this.confirmedAt = status == ReservationStatus.CONFIRMED ? now : null;
@@ -101,6 +107,7 @@ public class Reservation {
     public ClassSession getSession() { return session; }
     public User getUser() { return user; }
     public ReservationStatus getReservationStatus() { return reservationStatus; }
+    public int getPartySize() { return partySize; }
     public int getAttemptNo() { return attemptNo; }
     public LocalDateTime getRequestedAt() { return requestedAt; }
     public LocalDateTime getConfirmedAt() { return confirmedAt; }

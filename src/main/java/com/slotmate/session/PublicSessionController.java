@@ -1,6 +1,7 @@
 package com.slotmate.session;
 
 import com.slotmate.common.api.PageResponse;
+import com.slotmate.program.ProgramCategory;
 import com.slotmate.program.ProgramType;
 import com.slotmate.session.PublicSessionDtos.SessionDetail;
 import com.slotmate.session.PublicSessionDtos.SessionItem;
@@ -28,12 +29,13 @@ public class PublicSessionController {
 
     @GetMapping
     public PageResponse<SessionItem> list(@RequestParam LocalDate date,
+                                          @RequestParam(required = false) ProgramCategory category,
                                           @RequestParam(required = false) ProgramType type,
                                           @RequestParam(required = false) String keyword,
                                           @RequestParam(defaultValue = "0") @Min(0) int page,
                                           @RequestParam(defaultValue = "20") @Min(1) int size,
                                           @AuthenticationPrincipal Jwt jwt) {
-        return sessionQueryService.listByDate(date, type, keyword, page, size, userIdOf(jwt));
+        return sessionQueryService.listByDate(date, category, type, keyword, page, size, userIdOf(jwt));
     }
 
     @GetMapping("/{sessionId}")

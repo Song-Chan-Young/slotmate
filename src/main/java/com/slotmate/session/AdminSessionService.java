@@ -61,7 +61,7 @@ public class AdminSessionService {
         Map<Long, Map<ReservationStatus, Long>> counts = new HashMap<>();
         List<Long> ids = sessions.getContent().stream().map(ClassSession::getId).toList();
         if (!ids.isEmpty()) {
-            for (Object[] row : reservationRepository.countGroupedBySessionAndStatus(ids)) {
+            for (Object[] row : reservationRepository.sumGroupedBySessionAndStatus(ids)) {
                 counts.computeIfAbsent((Long) row[0], k -> new HashMap<>())
                         .put((ReservationStatus) row[1], (Long) row[2]);
             }
@@ -162,6 +162,6 @@ public class AdminSessionService {
     }
 
     private long countReservations(Long sessionId, ReservationStatus status) {
-        return reservationRepository.countBySessionIdAndReservationStatus(sessionId, status);
+        return reservationRepository.sumPartySize(sessionId, status);
     }
 }

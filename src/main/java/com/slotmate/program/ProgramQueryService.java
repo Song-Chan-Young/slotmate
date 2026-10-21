@@ -26,18 +26,21 @@ public class ProgramQueryService {
         this.sessionQueryService = sessionQueryService;
     }
 
-    public PageResponse<ProgramItem> list(ProgramType type, String keyword, int page, int size) {
+    /** category 가 null 이면 전체 카테고리 */
+    public PageResponse<ProgramItem> list(ProgramCategory category, ProgramType type, String keyword, int page, int size) {
         String trimmed = keyword == null || keyword.isBlank() ? null : keyword.trim();
         PageRequest pageable = PageRequest.of(page, size, Sort.by("id"));
-        return PageResponse.of(programRepository.searchActive(type, trimmed, pageable), ProgramItem::from);
+        return PageResponse.of(programRepository.searchActive(ProgramCategory.typesOrAll(category), type, trimmed, pageable),
+                ProgramItem::from);
     }
+
 
     /** 비활성 프로그램은 404 */
     public ProgramDetail detail(Long programId, LocalDate from, LocalDate to, Long userId) {
         Program p = programRepository.findById(programId).filter(Program::isActive)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-        return new ProgramDetail(p.getId(), p.getName(), p.getProgramType(), p.getDescription(),
-                p.getDefaultDurationMinutes(), p.getDefaultCapacity(),
+        return new ProgramDetail(p.getId(), p.getName(), p.getProgramType().category(), p.getProgramType(),
+                p.getDescription(), p.getDefaultDurationMinutes(), p.getDefaultCapacity(), p.getMaxPartySize(),
                 sessionQueryService.upcomingForProgram(programId, from, to, userId));
     }
 }

@@ -4,6 +4,7 @@ import com.slotmate.common.api.PageResponse;
 import com.slotmate.common.error.BusinessException;
 import com.slotmate.common.error.ErrorCode;
 import com.slotmate.common.time.SeoulTime;
+import com.slotmate.program.ProgramCategory;
 import com.slotmate.program.ProgramType;
 import com.slotmate.reservation.Reservation;
 import com.slotmate.reservation.ReservationRepository;
@@ -38,12 +39,13 @@ public class SessionQueryService {
     }
 
     /** 6.3 — 시작 시각 오름차순 */
-    public PageResponse<SessionItem> listByDate(LocalDate date, ProgramType type, String keyword,
-                                                int page, int size, Long userId) {
+    public PageResponse<SessionItem> listByDate(LocalDate date, ProgramCategory category, ProgramType type,
+                                                String keyword, int page, int size, Long userId) {
         String trimmed = keyword == null || keyword.isBlank() ? null : keyword.trim();
         PageRequest pageable = PageRequest.of(page, size, Sort.by("startAt", "id"));
         Page<ClassSession> sessions = sessionRepository.searchPublic(
-                date.atStartOfDay(), date.plusDays(1).atStartOfDay(), type, trimmed, pageable);
+                date.atStartOfDay(), date.plusDays(1).atStartOfDay(), ProgramCategory.typesOrAll(category), type,
+                trimmed, pageable);
         Map<Long, SessionItem> items = toItems(sessions.getContent(), userId).stream()
                 .collect(Collectors.toMap(SessionItem::sessionId, Function.identity()));
         return PageResponse.of(sessions, s -> items.get(s.getId()));
@@ -71,7 +73,7 @@ public class SessionQueryService {
         List<Long> ids = sessions.stream().map(ClassSession::getId).toList();
 
         Map<Long, Map<ReservationStatus, Long>> counts = new HashMap<>();
-        for (Object[] row : reservationRepository.countGroupedBySessionAndStatus(ids)) {
+        for (Object[] row : reservationRepository.sumGroupedBySessionAndStatus(ids)) {
             counts.computeIfAbsent((Long) row[0], k -> new HashMap<>()).put((ReservationStatus) row[1], (Long) row[2]);
         }
         Map<Long, Reservation> mine = userId == null ? Map.of()
@@ -89,10 +91,13 @@ public class SessionQueryService {
             ReservationStatus myStatus = my == null ? null : my.getReservationStatus();
             Long myPosition = my == null ? null : myPositions.get(my.getId());
             return new SessionItem(s.getId(), s.getProgram().getId(), s.getProgram().getName(),
-                    s.getProgram().getProgramType(), s.getInstructor() == null ? null : s.getInstructor().getName(),
+                    s.getProgram().getProgramType().category(), s.getProgram().getProgramType(),
+                    s.getInstructor() == null ? null : s.getInstructor().getName(),
                     SeoulTime.toOffset(s.getStartAt()), SeoulTime.toOffset(s.getEndAt()),
-                    s.getCapacity(), confirmed, waiting, Math.max(0, s.getCapacity() - confirmed),
-                    s.getSessionStatus(), bookingAction(s, confirmed, myStatus, now), myStatus, myPosition);
+                    s.getCapacity(), s.getProgram().getMaxPartySize(), confirmed, waiting,
+                    Math.max(0, s.getCapacity() - confirmed), s.getSessionStatus(),
+                    bookingAction(s, confirmed, myStatus, now), myStatus, my == null ? null : my.getPartySize(),
+                    myPosition);
         }).toList();
     }
 

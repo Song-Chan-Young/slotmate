@@ -250,6 +250,7 @@ CREATE TABLE programs (
     description TEXT NULL,
     default_duration_minutes SMALLINT NOT NULL,
     default_capacity INT NOT NULL,
+    max_party_size SMALLINT NOT NULL DEFAULT 1,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
@@ -299,6 +300,7 @@ CREATE TABLE reservations (
     session_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
     reservation_status VARCHAR(20) NOT NULL,
+    party_size INT NOT NULL DEFAULT 1,
     attempt_no INT NOT NULL DEFAULT 1,
     requested_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     confirmed_at DATETIME(6) NULL,

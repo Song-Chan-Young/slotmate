@@ -3,6 +3,7 @@ package com.slotmate.reservation;
 import com.slotmate.common.api.PageResponse;
 import com.slotmate.reservation.ReservationDtos.CancelResponse;
 import com.slotmate.reservation.ReservationDtos.MyReservationItem;
+import com.slotmate.reservation.ReservationDtos.ReserveRequest;
 import com.slotmate.reservation.ReservationDtos.ReserveResponse;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,8 +32,10 @@ public class ReservationController {
 
     @PostMapping("/api/v1/sessions/{sessionId}/reservations")
     @ResponseStatus(HttpStatus.CREATED)
-    public ReserveResponse reserve(@PathVariable Long sessionId, @AuthenticationPrincipal Jwt jwt) {
-        return reservationService.reserve(sessionId, Long.valueOf(jwt.getSubject()));
+    public ReserveResponse reserve(@PathVariable Long sessionId, @RequestBody(required = false) ReserveRequest request,
+                                   @AuthenticationPrincipal Jwt jwt) {
+        int partySize = request == null ? 1 : request.partySizeOrDefault();
+        return reservationService.reserve(sessionId, Long.valueOf(jwt.getSubject()), partySize);
     }
 
     @GetMapping("/api/v1/my/reservations")

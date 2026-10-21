@@ -10,15 +10,16 @@ public final class PublicProgramDtos {
     private PublicProgramDtos() {
     }
 
-    public record ProgramItem(Long programId, String name, ProgramType type, String description,
-                              int defaultDurationMinutes, int defaultCapacity) {
+    public record ProgramItem(Long programId, String name, ProgramCategory category, ProgramType type,
+                              String description, int defaultDurationMinutes, int defaultCapacity, int maxPartySize) {
         static ProgramItem from(Program p) {
-            return new ProgramItem(p.getId(), p.getName(), p.getProgramType(), p.getDescription(),
-                    p.getDefaultDurationMinutes(), p.getDefaultCapacity());
+            return new ProgramItem(p.getId(), p.getName(), p.getProgramType().category(), p.getProgramType(),
+                    p.getDescription(), p.getDefaultDurationMinutes(), p.getDefaultCapacity(), p.getMaxPartySize());
         }
     }
 
-    public record ProgramDetail(Long programId, String name, ProgramType type, String description,
-                                int defaultDurationMinutes, int defaultCapacity, List<SessionItem> sessions) {
+    public record ProgramDetail(Long programId, String name, ProgramCategory category, ProgramType type,
+                                String description, int defaultDurationMinutes, int defaultCapacity,
+                                int maxPartySize, List<SessionItem> sessions) {
     }
 }

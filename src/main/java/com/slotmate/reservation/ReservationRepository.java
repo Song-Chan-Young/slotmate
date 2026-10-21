@@ -17,7 +17,12 @@ import java.util.stream.Collectors;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
-    long countBySessionIdAndReservationStatus(Long sessionId, ReservationStatus reservationStatus);
+    /** 회차의 상태별 자리 합 — 정원은 예약 건수가 아니라 인원으로 셈 (확장 설계 v0.1 3.1) */
+    @Query("""
+            select coalesce(sum(r.partySize), 0) from Reservation r
+            where r.session.id = :sessionId and r.reservationStatus = :status
+            """)
+    long sumPartySize(@Param("sessionId") Long sessionId, @Param("status") ReservationStatus status);
 
     Optional<Reservation> findBySessionIdAndUserId(Long sessionId, Long userId);
 
@@ -65,9 +70,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<Reservation> findBySessionIdAndReservationStatus(Long sessionId, ReservationStatus reservationStatus);
 
-    /** 승격 대상 — 가장 오래 기다린 대기 (명세 10절 6) */
+    /** 승격 후보 — 오래 기다린 순 (명세 10절 6). 들어갈 수 있는 팀부터 승격 (확장 설계 v0.1 3.3) */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<Reservation> findFirstBySessionIdAndReservationStatusOrderByRequestedAtAscIdAsc(
+    List<Reservation> findBySessionIdAndReservationStatusOrderByRequestedAtAscIdAsc(
             Long sessionId, ReservationStatus reservationStatus);
 
     /** 7.2 내 예약. status·from·to 는 null 이면 조건 없음 */
@@ -107,11 +112,11 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     Page<Reservation> searchBySession(@Param("sessionId") Long sessionId, @Param("status") ReservationStatus status,
                                       Pageable pageable);
 
-    /** 회차별·상태별 건수. 결과 행 = [sessionId, status, count] */
+    /** 회차별·상태별 자리 합(인원). 결과 행 = [sessionId, status, 인원] */
     @Query("""
-            select r.session.id, r.reservationStatus, count(r) from Reservation r
+            select r.session.id, r.reservationStatus, sum(r.partySize) from Reservation r
             where r.session.id in :sessionIds
             group by r.session.id, r.reservationStatus
             """)
-    List<Object[]> countGroupedBySessionAndStatus(@Param("sessionIds") Collection<Long> sessionIds);
+    List<Object[]> sumGroupedBySessionAndStatus(@Param("sessionIds") Collection<Long> sessionIds);
 }

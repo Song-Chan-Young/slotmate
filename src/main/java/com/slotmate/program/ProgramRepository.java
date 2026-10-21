@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+
 public interface ProgramRepository extends JpaRepository<Program, Long> {
 
     /** type·keyword 는 null 이면 조건 없음. keyword 는 프로그램명 부분 일치 */
@@ -20,8 +22,9 @@ public interface ProgramRepository extends JpaRepository<Program, Long> {
     @Query("""
             select p from Program p
             where p.active = true
+              and p.programType in :types
               and (:type is null or p.programType = :type)
               and (:keyword is null or p.name like concat('%', :keyword, '%'))
             """)
-    Page<Program> searchActive(@Param("type") ProgramType type, @Param("keyword") String keyword, Pageable pageable);
+    Page<Program> searchActive(@Param("types") Collection<ProgramType> types, @Param("type") ProgramType type, @Param("keyword") String keyword, Pageable pageable);
 }

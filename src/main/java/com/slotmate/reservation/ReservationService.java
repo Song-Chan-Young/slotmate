@@ -45,9 +45,9 @@ public class ReservationService {
         this.notificationService = notificationService;
     }
 
-    /** API 명세 7.1 · DB 설계서 6.1 — 회차 행을 잠근 뒤 정원 확인 */
+    /** API 명세 7.1 · DB 설계서 6.1 — 회차 행을 잠근 뒤 자리 확인. 인원이 다 들어가야 확정, 아니면 팀 전체 대기 (확장 설계 v0.1 3.2) */
     @Transactional
-    public ReserveResponse reserve(Long sessionId, Long userId) {
+    public ReserveResponse reserve(Long sessionId, Long userId, int partySize) {
         ClassSession session = sessionRepository.findByIdForUpdate(sessionId)
                 .filter(s -> s.getSessionStatus() != SessionStatus.DRAFT)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
@@ -55,14 +55,18 @@ public class ReservationService {
         if (session.getSessionStatus() != SessionStatus.OPEN || !session.getStartAt().isAfter(now)) {
             throw new BusinessException(ErrorCode.SESSION_NOT_OPEN);
         }
+        if (partySize < 1 || partySize > session.getProgram().getMaxPartySize() || partySize > session.getCapacity()) {
+            throw new BusinessException(ErrorCode.INVALID_PARTY_SIZE);
+        }
 
         Optional<Reservation> existing = reservationRepository.findBySessionIdAndUserId(sessionId, userId);
         if (existing.isPresent() && existing.get().isActive()) {
             throw new BusinessException(ErrorCode.DUPLICATE_ACTIVE_RESERVATION);
         }
 
-        long confirmed = reservationRepository.countBySessionIdAndReservationStatus(sessionId, ReservationStatus.CONFIRMED);
-        ReservationStatus status = confirmed < session.getCapacity() ? ReservationStatus.CONFIRMED : ReservationStatus.WAITING;
+        long confirmedSeats = reservationRepository.sumPartySize(sessionId, ReservationStatus.CONFIRMED);
+        ReservationStatus status = confirmedSeats + partySize <= session.getCapacity()
+                ? ReservationStatus.CONFIRMED : ReservationStatus.WAITING;
         User user = userRepository.getReferenceById(userId);
 
         Reservation reservation;
@@ -71,10 +75,10 @@ public class ReservationService {
         if (existing.isPresent()) {
             reservation = existing.get();
             fromStatus = reservation.getReservationStatus();
-            reservation.rebook(status, now);
+            reservation.rebook(partySize, status, now);
             eventType = ReservationEventType.REBOOKED;
         } else {
-            reservation = Reservation.create(session, user, status, now);
+            reservation = Reservation.create(session, user, partySize, status, now);
             fromStatus = null;
             eventType = status == ReservationStatus.CONFIRMED ? ReservationEventType.BOOKED : ReservationEventType.WAITLISTED;
         }
@@ -88,11 +92,11 @@ public class ReservationService {
 
         if (status == ReservationStatus.CONFIRMED) {
             notificationService.bookingConfirmed(reservation);
-            return new ReserveResponse(reservation.getId(), sessionId, status, null, "예약이 확정되었습니다.");
+            return new ReserveResponse(reservation.getId(), sessionId, status, partySize, null, "예약이 확정되었습니다.");
         }
         long position = reservationRepository.countWaitingUpTo(sessionId, reservation.getRequestedAt(), reservation.getId());
         notificationService.waitlisted(reservation, position);
-        return new ReserveResponse(reservation.getId(), sessionId, status, position, "대기 신청이 완료되었습니다.");
+        return new ReserveResponse(reservation.getId(), sessionId, status, partySize, position, "대기 신청이 완료되었습니다.");
     }
 
     /** API 명세 7.2 — 회차 시작 시각 내림차순. from·to 날짜 모두 포함 */
@@ -112,7 +116,7 @@ public class ReservationService {
 
     /**
      * API 명세 7.3 · 10절 5 — 회차 행을 잠근 뒤 취소. 확정 취소로 자리가 나고 회차가 OPEN 이면
-     * 가장 오래 기다린 대기 한 명을 같은 트랜잭션에서 확정
+     * 오래 기다린 순으로 남은 자리에 들어가는 팀을 같은 트랜잭션에서 확정 (확장 설계 v0.1 3.3, first-fit)
      */
     @Transactional
     public CancelResponse cancel(Long reservationId, Long userId) {
@@ -138,15 +142,18 @@ public class ReservationService {
 
         if (fromStatus == ReservationStatus.CONFIRMED && session.getSessionStatus() == SessionStatus.OPEN) {
             reservationRepository.flush();
-            long confirmed = reservationRepository.findBySessionIdAndReservationStatus(sessionId, ReservationStatus.CONFIRMED).size();
-            if (confirmed < session.getCapacity()) {
-                reservationRepository.findFirstBySessionIdAndReservationStatusOrderByRequestedAtAscIdAsc(
-                        sessionId, ReservationStatus.WAITING).ifPresent(waiting -> {
-                    waiting.promote(now);
-                    historyRepository.save(ReservationHistory.of(waiting, ReservationStatus.WAITING,
-                            ReservationEventType.PROMOTED, null, now));
-                    notificationService.promoted(waiting);
-                });
+            long freeSeats = session.getCapacity() - reservationRepository
+                    .findBySessionIdAndReservationStatus(sessionId, ReservationStatus.CONFIRMED).stream()
+                    .mapToLong(Reservation::getPartySize).sum();
+            for (Reservation waiting : reservationRepository.findBySessionIdAndReservationStatusOrderByRequestedAtAscIdAsc(
+                    sessionId, ReservationStatus.WAITING)) {
+                if (freeSeats <= 0) break;
+                if (waiting.getPartySize() > freeSeats) continue; // 안 들어가는 팀은 순번을 유지한 채 건너뜀
+                waiting.promote(now);
+                freeSeats -= waiting.getPartySize();
+                historyRepository.save(ReservationHistory.of(waiting, ReservationStatus.WAITING,
+                        ReservationEventType.PROMOTED, null, now));
+                notificationService.promoted(waiting);
             }
         }
         String message = fromStatus == ReservationStatus.CONFIRMED ? "예약이 취소되었습니다." : "대기가 취소되었습니다.";

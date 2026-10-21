@@ -72,7 +72,7 @@ class ReservationConcurrencyTest {
     @Test
     void 마지막_한_자리에_동시_신청하면_확정은_정원만큼_나머지는_대기() throws Exception {
         List<Callable<ReservationStatus>> tasks = userIds.stream()
-                .<Callable<ReservationStatus>>map(userId -> () -> reservationService.reserve(sessionId, userId).reservationStatus())
+                .<Callable<ReservationStatus>>map(userId -> () -> reservationService.reserve(sessionId, userId, 1).reservationStatus())
                 .toList();
 
         List<ReservationStatus> results = runTogether(tasks);
@@ -92,7 +92,7 @@ class ReservationConcurrencyTest {
         for (int i = 0; i < THREADS; i++) {
             tasks.add(() -> {
                 try {
-                    return reservationService.reserve(sessionId, userId).reservationStatus();
+                    return reservationService.reserve(sessionId, userId, 1).reservationStatus();
                 } catch (BusinessException e) {
                     assertThat(e.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_ACTIVE_RESERVATION);
                     return null;
@@ -110,13 +110,13 @@ class ReservationConcurrencyTest {
     @Test
     void 확정_취소와_새_신청이_동시에_와도_정원을_넘지_않고_대기자가_승격() throws Exception {
         long ownerId = userIds.get(0);
-        long reservationId = reservationService.reserve(sessionId, ownerId).reservationId();
-        reservationService.reserve(sessionId, userIds.get(1));
+        long reservationId = reservationService.reserve(sessionId, ownerId, 1).reservationId();
+        reservationService.reserve(sessionId, userIds.get(1), 1);
 
         List<Callable<ReservationStatus>> tasks = new ArrayList<>();
         tasks.add(() -> reservationService.cancel(reservationId, ownerId).reservationStatus());
         userIds.subList(2, THREADS).forEach(userId ->
-                tasks.add(() -> reservationService.reserve(sessionId, userId).reservationStatus()));
+                tasks.add(() -> reservationService.reserve(sessionId, userId, 1).reservationStatus()));
 
         runTogether(tasks);
 
@@ -132,7 +132,7 @@ class ReservationConcurrencyTest {
         jdbc.update("UPDATE class_sessions SET capacity = ? WHERE session_id = ?", capacity, sessionId);
         List<Long> confirmedReservations = new ArrayList<>();
         for (int i = 0; i < THREADS; i++) {
-            long reservationId = reservationService.reserve(sessionId, userIds.get(i)).reservationId();
+            long reservationId = reservationService.reserve(sessionId, userIds.get(i), 1).reservationId();
             if (i < capacity) confirmedReservations.add(reservationId);
         }
 
@@ -152,6 +152,63 @@ class ReservationConcurrencyTest {
                 + "USING (reservation_id) WHERE r.session_id = ? AND h.event_type = 'PROMOTED'", Integer.class, sessionId))
                 .isEqualTo(capacity);
         assertThat(count("WAITING")).isEqualTo(THREADS - capacity * 2);
+    }
+
+    /** 확장 설계 v0.1 3.5 — 인원 1~4명이 섞여 동시에 신청 */
+    @Test
+    void 인원이_섞인_동시_신청에도_확정_자리는_정원_이하이고_남은_자리에_들어갈_대기_팀이_없음() throws Exception {
+        int capacity = 10;
+        partyFixture(capacity);
+        List<Callable<ReservationStatus>> tasks = new ArrayList<>();
+        for (int i = 0; i < THREADS; i++) {
+            long userId = userIds.get(i);
+            int partySize = i % 4 + 1;
+            tasks.add(() -> reservationService.reserve(sessionId, userId, partySize).reservationStatus());
+        }
+
+        runTogether(tasks);
+
+        assertPartyInvariants(capacity);
+    }
+
+    /** 인원이 섞인 확정 팀들이 동시에 취소 → 승격이 겹쳐도 정원·first-fit 이 지켜지는지 */
+    @Test
+    void 인원이_섞인_확정_팀이_동시에_취소해도_정원_이하이고_들어갈_수_있는_대기_팀이_남지_않음() throws Exception {
+        int capacity = 10;
+        partyFixture(capacity);
+        List<long[]> confirmed = new ArrayList<>(); // [reservationId, userId]
+        for (int i = 0; i < THREADS; i++) {
+            var response = reservationService.reserve(sessionId, userIds.get(i), i % 4 + 1);
+            if (response.reservationStatus() == ReservationStatus.CONFIRMED) {
+                confirmed.add(new long[]{response.reservationId(), userIds.get(i)});
+            }
+        }
+
+        List<Callable<ReservationStatus>> tasks = confirmed.stream()
+                .<Callable<ReservationStatus>>map(r -> () -> reservationService.cancel(r[0], r[1]).reservationStatus())
+                .toList();
+        runTogether(tasks);
+
+        assertPartyInvariants(capacity);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM reservation_histories h JOIN reservations r USING (reservation_id) "
+                + "WHERE r.session_id = ? AND h.event_type = 'PROMOTED' GROUP BY h.reservation_id ORDER BY COUNT(*) DESC LIMIT 1",
+                Integer.class, sessionId)).isEqualTo(1); // 같은 팀이 두 번 승격되지 않음
+    }
+
+    private void partyFixture(int capacity) {
+        jdbc.update("UPDATE class_sessions SET capacity = ? WHERE session_id = ?", capacity, sessionId);
+        jdbc.update("UPDATE programs SET max_party_size = 4 WHERE program_id = ?", programId);
+    }
+
+    private void assertPartyInvariants(int capacity) {
+        int confirmedSeats = jdbc.queryForObject("SELECT COALESCE(SUM(party_size), 0) FROM reservations "
+                + "WHERE session_id = ? AND reservation_status = 'CONFIRMED'", Integer.class, sessionId);
+        Integer smallestWaiting = jdbc.queryForObject("SELECT MIN(party_size) FROM reservations "
+                + "WHERE session_id = ? AND reservation_status = 'WAITING'", Integer.class, sessionId);
+        assertThat(confirmedSeats).isLessThanOrEqualTo(capacity);
+        if (smallestWaiting != null) {
+            assertThat(smallestWaiting).isGreaterThan(capacity - confirmedSeats);
+        }
     }
 
     private <T> List<T> runTogether(List<Callable<T>> tasks) throws Exception {

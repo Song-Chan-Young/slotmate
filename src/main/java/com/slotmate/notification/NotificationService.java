@@ -45,33 +45,35 @@ public class NotificationService {
     }
 
     public void bookingConfirmed(Reservation reservation) {
-        save(reservation, NotificationType.BOOKING_CONFIRMED, "예약이 확정되었습니다", when(reservation.getSession()));
+        save(reservation, NotificationType.BOOKING_CONFIRMED, "예약이 확정되었습니다", when(reservation));
     }
 
     public void waitlisted(Reservation reservation, long position) {
         save(reservation, NotificationType.WAITLISTED, "대기 신청이 완료되었습니다",
-                when(reservation.getSession()) + " · 현재 대기 " + position + "번째");
+                when(reservation) + " · 현재 대기 " + position + "번째");
     }
 
     public void cancelled(Reservation reservation, boolean wasWaiting) {
         save(reservation, NotificationType.CANCELLED, wasWaiting ? "대기가 취소되었습니다" : "예약이 취소되었습니다",
-                when(reservation.getSession()));
+                when(reservation));
     }
 
     public void promoted(Reservation reservation) {
         save(reservation, NotificationType.PROMOTED, "대기하던 수업이 예약 확정되었습니다",
-                when(reservation.getSession()) + " · 앞선 예약이 취소되어 자동으로 확정되었습니다.");
+                when(reservation) + " · 앞선 예약이 취소되어 자동으로 확정되었습니다.");
     }
 
     private void save(Reservation reservation, NotificationType type, String title, String message) {
         notificationRepository.save(Notification.create(reservation.getUser(), reservation, type, title, message));
     }
 
-    /** 예: 10월 22일 (목) 07:00 매트 필라테스 */
-    private static String when(ClassSession session) {
+    /** 예: 10월 22일 (목) 07:00 매트 필라테스 — 2명 이상이면 「· 3명」 */
+    private static String when(Reservation reservation) {
+        ClassSession session = reservation.getSession();
         var start = session.getStartAt();
         return "%d월 %d일 (%s) %s %s".formatted(start.getMonthValue(), start.getDayOfMonth(),
                 start.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.KOREAN), start.format(TIME),
-                session.getProgram().getName());
+                session.getProgram().getName())
+                + (reservation.getPartySize() > 1 ? " · " + reservation.getPartySize() + "명" : "");
     }
 }

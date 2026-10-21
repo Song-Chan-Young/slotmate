@@ -30,7 +30,7 @@ public class AdminProgramService {
     @Transactional
     public ProgramResponse create(CreateRequest request) {
         Program program = Program.create(request.type(), request.name(), request.description(),
-                request.defaultDurationMinutes().shortValue(), request.defaultCapacity());
+                request.defaultDurationMinutes().shortValue(), request.defaultCapacity(), request.maxPartySizeOrDefault());
         return ProgramResponse.from(programRepository.save(program));
     }
 
@@ -38,7 +38,8 @@ public class AdminProgramService {
     public ProgramResponse update(Long programId, UpdateRequest request) {
         Program program = find(programId);
         Short duration = request.defaultDurationMinutes() == null ? null : request.defaultDurationMinutes().shortValue();
-        program.update(request.name(), request.description(), duration, request.defaultCapacity());
+        Short maxPartySize = request.maxPartySize() == null ? null : request.maxPartySize().shortValue();
+        program.update(request.name(), request.description(), duration, request.defaultCapacity(), maxPartySize);
         return ProgramResponse.from(program);
     }
 
