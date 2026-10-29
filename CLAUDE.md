@@ -28,7 +28,7 @@
 | 4 기본 기능 | 인증·권한 · 관리자 프로그램/회차 · 회원 조회 · 예약 생성 · 내 예약(7.2) · 취소(7.3) · 회차별 예약자(9.5) 끝 |
 | 5 정합성 | 자동 승격 · 이력 · 알림(8절) · 동시 요청 테스트 끝. 테스트 72개 통과 |
 | 6 품질·배포 | k6 부하 테스트(`loadtest/`) — 동시 취소 승격 버그 찾아 고침. Dockerfile·compose `app` 프로필·GitHub Actions CI. AWS 배포 끝 — 아래 「배포」. 쿼리 성능 점검(`loadtest/perf/`) — 대기 순번 N+1 수정, `ix_sessions_start` 추가. 운영 반영 2026-10-21(커밋 `49e0698` 빌드, RDS 인덱스 적용). PWA 운영 반영 |
-| 확장 1단계 | 카테고리·일행 예약(`docs/06_…`) — 인원 기준 정원, first-fit 승격, 화면·데모 데이터. 테스트 81개. 운영 미반영(`db/changes/2026-10-21_party_size.sql` 먼저) |
+| 확장 1단계 | 카테고리·일행 예약(`docs/06_…`) — 인원 기준 정원, first-fit 승격, 화면·데모 데이터. 테스트 81개. 운영 반영 2026-10-21(커밋 `978813d`, RDS 컬럼 추가, 운영 데모 데이터 다시 넣음) |
 
 **한 것**
 - Boot 4.1.1 · Java 21 · Gradle(Groovy) · Web·Validation·Security·OAuth2 Resource Server·JPA·MariaDB·springdoc 3.1.1
